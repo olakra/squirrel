@@ -33,6 +33,39 @@ use crate::simulation::world::World;
 
 thread_local! {
     static WORLD: RefCell<Option<World>> = const { RefCell::new(None) };
+    /// Items copied out by the last `axiom_snapshot_items` call. The per-item
+    /// getters read from here, so one frame costs one walk of the world.
+    static SNAPSHOT: RefCell<Vec<ItemSnapshot>> = const { RefCell::new(Vec::new()) };
+}
+
+/// One item as the renderer sees it: its id and where it sits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ItemSnapshot {
+    pub item: u16,
+    /// Index of the lane across the whole world, in chain order.
+    pub lane: u32,
+    /// Distance from the start of that lane.
+    pub offset: u32,
+}
+
+/// Collects every item on every lane. Lanes are numbered in chain order, and
+/// items are listed rear to front within each lane.
+fn collect_items(chains: &[BeltChain]) -> Vec<ItemSnapshot> {
+    let mut out = Vec::new();
+    let mut lane_index: u32 = 0;
+    for chain in chains {
+        for lane in chain.lanes() {
+            for it in lane.items() {
+                out.push(ItemSnapshot {
+                    item: it.item.0,
+                    lane: lane_index,
+                    offset: it.offset,
+                });
+            }
+            lane_index = lane_index.saturating_add(1);
+        }
+    }
+    out
 }
 
 /// Splits a `u64` into `(low, high)` 32-bit halves.
@@ -142,6 +175,49 @@ pub extern "C" fn axiom_tick_count() -> u32 {
     with_world(|w| w.tick_count()).map_or(0, saturate_u32)
 }
 
+/// Copies every item's position into the snapshot buffer and returns how many
+/// items there are, saturated to `u32`. Call once per frame, then read the
+/// items with the `axiom_item_*` getters. Returns 0 if there is no world.
+#[no_mangle]
+pub extern "C" fn axiom_snapshot_items() -> u32 {
+    let items = with_world(|w| collect_items(w.chains())).unwrap_or_default();
+    let count = saturate_u32(items.len() as u64);
+    SNAPSHOT.with(|cell| {
+        if let Ok(mut slot) = cell.try_borrow_mut() {
+            *slot = items;
+        }
+    });
+    count
+}
+
+/// Reads one field of snapshot item `index`, or 0 if the index is out of range.
+fn snapshot_field(index: u32, field: impl FnOnce(&ItemSnapshot) -> u32) -> u32 {
+    SNAPSHOT.with(|cell| {
+        cell.try_borrow()
+            .ok()
+            .and_then(|v| v.get(index as usize).map(field))
+            .unwrap_or(0)
+    })
+}
+
+/// Item id of snapshot item `index`.
+#[no_mangle]
+pub extern "C" fn axiom_item_id(index: u32) -> u32 {
+    snapshot_field(index, |s| u32::from(s.item))
+}
+
+/// Lane index of snapshot item `index`.
+#[no_mangle]
+pub extern "C" fn axiom_item_lane(index: u32) -> u32 {
+    snapshot_field(index, |s| s.lane)
+}
+
+/// Offset along its lane of snapshot item `index`.
+#[no_mangle]
+pub extern "C" fn axiom_item_offset(index: u32) -> u32 {
+    snapshot_field(index, |s| s.offset)
+}
+
 /// Hashes the world state and splits the result into `(lo, hi)`. Each
 /// exported getter calls this, so the hash is computed once per getter.
 fn split_hash() -> (u32, u32) {
@@ -232,5 +308,54 @@ mod tests {
         assert_eq!(a.state_hash(), b.state_hash());
         let c = build_world(3, 40, 2).expect("valid layout");
         assert_ne!(a.state_hash(), c.state_hash());
+    }
+
+    #[test]
+    fn collect_items_is_empty_for_an_empty_world() {
+        let w = build_world(2, 40, 2).expect("valid layout");
+        assert!(collect_items(w.chains()).is_empty());
+    }
+
+    #[test]
+    fn collect_items_reports_item_id_lane_and_offset() {
+        let mut w = build_world(2, 40, 2).expect("valid layout");
+        let head = w.chains_mut().first_mut().expect("one chain");
+        assert!(head.try_feed(ItemId(7)));
+        assert_eq!(
+            collect_items(w.chains()),
+            vec![ItemSnapshot {
+                item: 7,
+                lane: 0,
+                offset: 0
+            }]
+        );
+    }
+
+    #[test]
+    fn collect_items_follows_the_item_as_it_moves() {
+        let mut w = build_world(2, 40, 2).expect("valid layout");
+        assert!(w
+            .chains_mut()
+            .first_mut()
+            .expect("chain")
+            .try_feed(ItemId(3)));
+        w.step();
+        let items = collect_items(w.chains());
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].offset, 2, "lane speed is 2 per tick");
+    }
+
+    #[test]
+    fn collect_items_numbers_lanes_across_chains() {
+        let lane = || BeltLane::with_capacity(40, 2, 10);
+        let chains = vec![
+            BeltChain::new(vec![lane(), lane()]),
+            BeltChain::new(vec![lane()]),
+        ];
+        let mut chains = chains;
+        assert!(chains[1].try_feed(ItemId(9)));
+        let items = collect_items(&chains);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].lane, 2, "third lane overall");
     }
 }

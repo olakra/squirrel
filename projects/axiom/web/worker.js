@@ -14,6 +14,8 @@
 // Renderer: web/renderer.js is optional. If it exists and exports createRenderer,
 // the worker draws through it. Otherwise the 2D placeholder is drawn.
 
+import { writeInstances, FLOATS_PER_INSTANCE } from "./items.js";
+
 // The renderer module is loaded once at startup. A missing file resolves to null.
 const rendererReady = import("./renderer.js").catch(() => null);
 
@@ -35,16 +37,21 @@ const REQUIRED_EXPORTS = [
   "axiom_state_hash_hi",
   "axiom_sunk",
   "axiom_tick_count",
+  "axiom_snapshot_items",
+  "axiom_item_id",
+  "axiom_item_lane",
+  "axiom_item_offset",
 ];
 
 let sim = null; // exports of the instantiated axiom.wasm, or null
+let rendererModule = null; // renderer.js exports, kept for packInstance and colourForItem
 let renderer = null; // object from createRenderer, or null
 let ctx = null; // 2D context, used only when there is no renderer
 let canvas = null;
 let size = { width: 0, height: 0 };
 let paused = false;
 let placeholderTicks = 0; // drives the placeholder bar when there is no sim
-const instances = new Float32Array(0); // see draw(): no item export yet
+let instances = new Float32Array(0); // renderer input, grown when items outnumber it
 
 const log = (msg) => self.postMessage({ kind: "log", msg });
 
@@ -117,6 +124,7 @@ async function attachCanvas(msg) {
       const r = mod.createRenderer(canvas, { width: size.width, height: size.height });
       if (r && typeof r.draw === "function" && typeof r.resize === "function") {
         renderer = r;
+        rendererModule = mod;
         log("renderer active");
         return;
       }
@@ -191,12 +199,33 @@ function advance(ticks) {
   }
 }
 
+// Fills `instances` from the simulation's current items. Returns how many there are.
+function buildInstances() {
+  if (!sim || !rendererModule) return 0;
+  const count = sim.axiom_snapshot_items();
+  const needed = count * FLOATS_PER_INSTANCE;
+  if (instances.length < needed) {
+    instances = new Float32Array(Math.max(needed, instances.length * 2));
+  }
+  const read = {
+    id: (i) => sim.axiom_item_id(i),
+    lane: (i) => sim.axiom_item_lane(i),
+    offset: (i) => sim.axiom_item_offset(i),
+  };
+  return writeInstances(
+    instances,
+    count,
+    read,
+    LANES.length,
+    rendererModule.packInstance,
+    rendererModule.colourForItem,
+  );
+}
+
 function draw() {
   if (renderer) {
     try {
-      // No item export exists yet: the layer exposes sunk, tick and hash, not item
-      // positions. So the instance buffer is empty and the renderer draws no items.
-      renderer.draw(instances, 0);
+      renderer.draw(instances, buildInstances());
     } catch (err) {
       renderer = null;
       log(`renderer failed: ${err.message}. Using placeholder`);
