@@ -11,8 +11,8 @@
 | Fixed-timestep world + FNV-1a state hash | Implemented, tested (1,000-tick determinism regression) |
 | Splitters and inserters wired into `World` | Implemented, tested: fixed four-phase tick order (inserter pick, chain advance, splitter route, inserter drop), hashed into state (issue #11) |
 | WASM C-ABI exports (`src/wasm.rs`) + build script | Implemented; `wasm32` build verified in CI only |
-| Web Worker simulation + SharedArrayBuffer | Harness and gamepad input only; sim not yet in worker (issue #14) |
-| Rendering (instanced sprites, WebGL2) | Placeholder canvas only (issue #13) |
+| Web Worker simulation + SharedArrayBuffer | Worker runs the WASM sim at 60 Hz; `F` feeds an item. Browser check pending (issue #14) |
+| Rendering (instanced sprites, WebGL2) | Items drawn from a per-frame WASM snapshot (`axiom_snapshot_items`). Browser check pending (issue #13) |
 | Benchmarks (std-only `belt_throughput`) | Implemented; regression gate is a review rule (issue #4) |
 | Desktop shell (Electron) and Steam packaging | Implemented; not yet built on Steam (issues #15–#18) |
 

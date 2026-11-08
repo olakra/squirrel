@@ -44,6 +44,20 @@ test.skipIf(!HAS_WASM)("axiom_feed accepts an item on an empty head lane", async
   expect(ex.axiom_feed(1)).toBe(1);
 });
 
+test.skipIf(!HAS_WASM)("axiom_snapshot_items reports a fed item with its id, lane and offset", async () => {
+  const ex = await freshExports();
+  ex.axiom_init(LANE_COUNT, LANE_LENGTH, LANE_SPEED);
+  expect(ex.axiom_snapshot_items()).toBe(0);
+  expect(ex.axiom_feed(5)).toBe(1);
+  ex.axiom_step(3);
+  expect(ex.axiom_snapshot_items()).toBe(1);
+  expect(ex.axiom_item_id(0)).toBe(5);
+  expect(ex.axiom_item_lane(0)).toBe(0);
+  expect(ex.axiom_item_offset(0)).toBe(LANE_SPEED * 3);
+  // An index past the end reads as 0 instead of failing.
+  expect(ex.axiom_item_id(99)).toBe(0);
+});
+
 test.skipIf(!HAS_WASM)("axiom_feed rejects an item id above u16::MAX", async () => {
   const ex = await freshExports();
   ex.axiom_init(LANE_COUNT, LANE_LENGTH, LANE_SPEED);
