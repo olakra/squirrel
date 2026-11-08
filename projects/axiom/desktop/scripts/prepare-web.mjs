@@ -2,6 +2,8 @@
 //
 // Fails when axiom.wasm is missing, because a release without the simulation is a broken
 // release. For a local smoke test without WASM, pass --allow-missing-wasm.
+// Dotfiles and *.test.js files in web/ are not copied, so tests never ship in the app.
+// Run with Bun: `bun scripts/prepare-web.mjs`. The script uses only node:fs and node:path.
 
 import { access, cp, rm } from "node:fs/promises";
 import path from "node:path";
@@ -38,6 +40,9 @@ if (!(await exists(path.join(src, "axiom.wasm")))) {
 await rm(dest, { recursive: true, force: true });
 await cp(src, dest, {
   recursive: true,
-  filter: (p) => !path.basename(p).startsWith("."),
+  filter: (p) => {
+    const name = path.basename(p);
+    return !name.startsWith(".") && !name.endsWith(".test.js");
+  },
 });
 console.log(`copied ${src} to ${dest}`);

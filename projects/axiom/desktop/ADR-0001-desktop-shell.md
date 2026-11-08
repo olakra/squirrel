@@ -48,6 +48,11 @@ We will use Electron, in `projects/axiom/desktop`, with these choices:
 - The network is blocked except for the app's own origin.
 - Output is unpacked folders (`electron-builder --dir`). Steam depots take folders.
 - The shell contains no Steam code. The Steamworks SDK goes in a separate module later.
+- **Toolchain: Bun 1.4.4 replaces npm as the package manager, script runner and test runner.** The
+  lock file is `bun.lock`. Bun does not replace Electron. Electron ships its own Chromium and Node.js
+  for the app at run time, so the game still runs on Electron, not on Bun. Bun runs the build tools
+  around it (install, `electron-builder`, the `prepare-web` and `stage-depot` scripts, and the tests).
+  Electron's install script runs on Node, so Node 22 or newer stays on every machine and runner.
 
 ## Consequences
 
@@ -59,6 +64,7 @@ We will use Electron, in `projects/axiom/desktop`, with these choices:
   namespaces or a setuid `chrome-sandbox` helper. A Steam depot cannot set the setuid bit. If the Deck
   build aborts with a sandbox error, the documented fallback is `--no-sandbox` in the Linux launch
   options. Enable it only after that test fails, and record the reason. See `desktop/README.md`.
-- **Not built here.** The network blocks package installs, so `npm ci` and `electron-builder` have not been
-  run. `package-lock.json` does not exist yet. Commit it after the first `npm install` on a networked machine.
+- **Not built here.** The network blocks package installs, so `bun install` and `electron-builder` have not
+  been run. `bun.lock` does not exist yet. Commit it after the first `bun install` on a networked machine.
+  CI runs `bun install --frozen-lockfile` and fails until the file is committed.
 - **Follow-up:** after a preview build runs on a Deck, record the result in this ADR and set Status to Accepted.

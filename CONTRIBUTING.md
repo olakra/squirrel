@@ -11,7 +11,9 @@ You need:
   `wasm32-unknown-unknown` target.
 - `cargo-llvm-cov` (coverage gate) and `cargo-deny` (supply-chain gate).
 - Nightly Rust, which `projects/axiom/scripts/build-wasm.sh` needs for `build-std`.
-- Node.js 22 or newer (markdownlint runs through `npx`).
+- Bun 1.4.4, for the desktop shell and the JavaScript tests (`make js-test`). Install it from bun.sh.
+- Node.js 22 or newer. Electron's install script runs on Node, and markdownlint runs through `npx`
+  in CI and pre-commit.
 - GNU `make`.
 - Optional: `pre-commit`, to run the same checks on every commit.
 
@@ -34,6 +36,9 @@ clippy, tests, coverage gate, bench smoke test, wasm build, cargo-deny, and mark
 Run `make ci` before you push. A green local run should mean a green CI run.
 
 Other targets: `make fmt` (formats code), `make test`, `make cov`, `make bench`, `make wasm`.
+JavaScript targets, which need Bun and no network: `make js-test` (Bun tests for `web/` and
+`desktop/`) and `make js-check` (parses every hand-written `.js` and `.mjs` file). `js-test` is not
+part of `make ci`, because CI does not install Bun.
 
 Governance targets, which need no network: `make scripts-test` (runs every script self-test),
 `make commit-lint` and `make changelog-check` (compare against `origin/main`), and

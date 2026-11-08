@@ -69,3 +69,16 @@ scripts-test:
 	bash scripts/ci/check-commit-messages.sh --self-test
 	bash scripts/ci/check-changelog.sh --self-test
 	bash scripts/ci/extract-changelog.sh --self-test
+
+# JavaScript checks. They need Bun 1.4.4 on PATH and no network access.
+# js-test is not part of `make ci`: ci.yml does not install Bun, so adding it there would break CI.
+# The js-test gate runs in .github/workflows/steam-build.yml.
+.PHONY: js-test js-check
+
+js-test:
+	cd $(AXIOM)/web && bun test
+	cd $(AXIOM)/desktop && bun run test
+
+# Parses every hand-written JavaScript file with Bun's transpiler. It bundles and writes nothing.
+js-check:
+	find $(AXIOM)/web $(AXIOM)/desktop \( -name node_modules -o -name app-web -o -name dist \) -prune -o \( -name '*.js' -o -name '*.mjs' \) -type f -print0 | xargs -0 -n1 bun build --no-bundle > /dev/null

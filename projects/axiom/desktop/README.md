@@ -4,7 +4,7 @@ An Electron shell that runs the bundled `web/` build as a native app on Windows,
 and the Steam Deck use the same build. The reasoning is in [ADR-0001](ADR-0001-desktop-shell.md).
 
 **Status:** this shell has not been built or run. Packages could not be installed in the environment that
-wrote it. The first `npm ci` and `npm run dist:*` must happen on a machine with network access.
+wrote it. The first `bun install` and `bun run dist:*` must happen on a machine with network access.
 
 ## Layout
 
@@ -15,17 +15,35 @@ wrote it. The first `npm ci` and `npm run dist:*` must happen on a machine with 
 | `electron-builder.yml` | Packaging. Every target is `dir`. |
 | `scripts/prepare-web.mjs` | Copies `../web` to `app-web/` for packaging. Fails if `axiom.wasm` is missing. |
 | `scripts/stage-depot.mjs` | Copies one platform's output to `dist/staging/<platform>/` for Steam. |
-| `package.json` | Pinned ranges for Electron and electron-builder. |
+| `test/*.test.mjs` | `bun test` suites for the scripts above. |
+| `package.json` | Bun 1.4.4 (`packageManager`), Electron and electron-builder ranges, and the scripts Bun runs. |
+| `bun.lock` | Exact versions. Must be committed. Not yet created (see below). |
 
 ## Run and package
 
-Run these from this folder, on a machine with network access.
+Run these from this folder, on a machine with network access. Install Bun 1.4.4 first (see bun.sh).
 
 ```bash
-npm ci                      # first time: creates package-lock.json, then commit it
-npm start                   # development: loads ../web directly, no copy step
-npm run dist:linux          # packages dist/linux-unpacked (also dist:win, dist:mac)
+bun install                 # first time: creates bun.lock, then commit it. CI uses --frozen-lockfile.
+bun run start               # development: loads ../web directly, no copy step
+bun run dist:linux          # packages dist/linux-unpacked (also dist:win, dist:mac)
+bun run test                # Bun tests for the scripts. Needs no install and no network.
 ```
+
+Node.js 22 or newer is still needed. Electron's install script runs on Node, and the packaged
+app runs on Electron's own Node. Bun does not replace either.
+
+### Why Bun, and what it does not replace
+
+Bun installs packages, runs the `package.json` scripts and runs the tests. It does not replace the Chromium
+runtime. Electron bundles Chromium and Node for the app itself, so the packaged game still runs
+on Electron, not Bun. `trustedDependencies` in `package.json` lists `electron`, because Bun does
+not run dependency install scripts unless they are listed there. Electron's install script
+downloads the Electron binary.
+
+The scripts stay `.mjs`. They use only `node:fs` and `node:path`, and Bun runs them unchanged. A
+rewrite to TypeScript would add a build step for no runtime gain, and this shell is not large
+enough to need one. `steam/render_vdf.py` stays Python.
 
 Packaging needs `../web/axiom.wasm`. Build it first with `projects/axiom/scripts/build-wasm.sh`.
 

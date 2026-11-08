@@ -73,16 +73,16 @@ Run these from `projects/axiom/desktop`. Use your own values in place of the pla
 paste real values into shared logs.
 
 ```bash
-npm ci
-node scripts/prepare-web.mjs --allow-missing-wasm   # local test only; release builds need web/axiom.wasm
-npx electron-builder --linux --dir --publish never
-node scripts/stage-depot.mjs linux
+bun install --frozen-lockfile
+bun scripts/prepare-web.mjs --allow-missing-wasm    # local test only; release builds need web/axiom.wasm
+bunx electron-builder --linux --dir --publish never
+bun scripts/stage-depot.mjs linux
 STEAM_APP_ID=<app id> STEAM_DEPOT_WINDOWS_ID=<id> STEAM_DEPOT_LINUX_ID=<id> STEAM_DEPOT_MACOS_ID=<id> \
   AXIOM_STAGING_DIR=$PWD/dist/staging python3 ../steam/render_vdf.py --out "$PWD/dist/steam"
 ```
 
 Without `--allow-missing-wasm`, `prepare-web.mjs` stops when `web/axiom.wasm` is missing. Run
-`npm run dist:linux` for the same packaging steps, with that check on.
+`bun run dist:linux` for the same packaging steps, with that check on.
 
 ## Before the first upload
 
@@ -91,7 +91,7 @@ Without `--allow-missing-wasm`, `prepare-web.mjs` stops when `web/axiom.wasm` is
 - Add app icons and Steam store art. Steamworks requires store art, and the app needs its own icon.
 - Sign and notarize the macOS build with an Apple Developer ID. Check whether Steamworks requires
   this for the macOS depot (verify).
-- Commit `desktop/package-lock.json`. The workflow runs `npm ci`, which fails without it.
+- Commit `desktop/bun.lock`. The workflow runs `bun install --frozen-lockfile`, which fails without it.
 - Test each depot on real hardware from a preview branch before setting anything live.
 - Confirm the Linux build starts on SteamOS. See the sandbox note in `desktop/README.md`.
 

@@ -15,6 +15,11 @@ with `make ci`. This page states what each gate measures and how to fix it.
 | wasm | `bash scripts/build-wasm.sh` | The WebAssembly build still succeeds. Uploads `axiom.wasm`. | Build succeeds. | Reproduce with `make wasm`. The script owns the build flags. |
 | supply chain | `cargo deny check` | Licenses (allow-list), known advisories, yanked and unmaintained crates, banned sources. Policy: `projects/axiom/deny.toml`. | Zero errors. Duplicate versions are warnings. | Upgrade the crate, or justify an exception in `deny.toml` in the PR. |
 | docs | `markdownlint-cli2 "**/*.md"` | Markdown structure and style. Rules: `.markdownlint.jsonc`. Excluded: `.markdownlint-cli2.jsonc`. | Zero errors. | Run the linter locally and fix the reported line. |
+| js-test | `bun test` in `projects/axiom/web`, and `bun run test` in `projects/axiom/desktop` | Input translation (deadzone, edge-triggered buttons, D-pad repeat, frame-time cap) and the desktop `prepare-web` script. | All pass. | Run `make js-test` locally. Read the failing assertion before changing the expected value. |
+
+The js-test gate is a CI job in [.github/workflows/steam-build.yml](../../.github/workflows/steam-build.yml),
+not in `ci.yml`. It is also not part of `make ci`, because `ci.yml` does not install Bun. Run it with
+`make js-test`. Add it to `make ci` once `ci.yml` installs Bun 1.4.4.
 
 ## What the coverage gate means
 

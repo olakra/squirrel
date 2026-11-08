@@ -21,7 +21,7 @@ permissions:
 env:
   DESKTOP_DIR: projects/axiom/desktop
   AXIOM_DIR: projects/axiom
-  NODE_VERSION: "22"
+  BUN_VERSION: "1.4.4"
 
 jobs:
   wasm:
@@ -48,9 +48,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  js-test:
+    name: JavaScript tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: test web input logic
+        working-directory: ${{ env.AXIOM_DIR }}/web
+        run: bun test
+      - name: test desktop scripts
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: bun run test
+
   desktop:
     name: desktop (${{ matrix.depot }})
-    needs: wasm
+    needs: [wasm, js-test]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -68,30 +84,36 @@ jobs:
             builder: "--mac --universal"
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Bun installs and runs the scripts. Electron's own install script runs on Node.js, which
+      # GitHub-hosted runners already include. No setup-node step is needed for that.
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          # Lock-file caching is enabled once projects/axiom/desktop/package-lock.json
-          # is committed; setup-node fails if the file is missing.
+          bun-version: ${{ env.BUN_VERSION }}
       - name: download axiom.wasm
         uses: actions/download-artifact@v4
         with:
           name: axiom-wasm
           path: projects/axiom/web
+      - name: check bun.lock is committed
+        shell: bash
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: |
+          if [ ! -f bun.lock ]; then
+            echo "::error::projects/axiom/desktop/bun.lock is missing. Run 'bun install' there once and commit bun.lock."
+            exit 1
+          fi
       - name: install desktop dependencies
         working-directory: ${{ env.DESKTOP_DIR }}
-        # Use the reproducible install when the lock file is committed.
-        # Until then, fall back to npm install so the workflow still runs.
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else echo "::warning::no package-lock.json; using npm install"; npm install --no-audit --no-fund; fi
+        # Fails when bun.lock does not match package.json, so CI never resolves new versions.
+        run: bun install --frozen-lockfile
       - name: package unpacked app
         working-directory: ${{ env.DESKTOP_DIR }}
         run: |
-          node scripts/prepare-web.mjs
-          npx electron-builder ${{ matrix.builder }} --dir --publish never
+          bun run prepare-web
+          bunx electron-builder ${{ matrix.builder }} --dir --publish never
       - name: stage depot folder
         working-directory: ${{ env.DESKTOP_DIR }}
-        run: node scripts/stage-depot.mjs ${{ matrix.depot }}
+        run: bun scripts/stage-depot.mjs ${{ matrix.depot }}
       - name: archive depot (tar keeps file modes and symlinks)
         working-directory: ${{ env.DESKTOP_DIR }}/dist/staging
         shell: bash
