@@ -1,5 +1,7 @@
 # Project Axiom
 
+[![CI](https://github.com/olakra/squirrel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/olakra/squirrel/actions/workflows/ci.yml) [![Steam build](https://github.com/olakra/squirrel/actions/workflows/steam-build.yml/badge.svg)](https://github.com/olakra/squirrel/actions/workflows/steam-build.yml)
+
 A deterministic 2D factory simulation. The core is Rust with no dependencies. A browser harness in
 `web/` runs the WASM build. A desktop shell and Steam packaging sit on top of the browser build.
 
