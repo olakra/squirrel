@@ -3,7 +3,7 @@ title: "Diagrams"
 layout: default
 ---
 
-# Diagrams
+## Diagrams
 
 Each diagram below was drawn from the source named under it. When the code and a diagram disagree, the code wins and the
 diagram is wrong. Diagrams are Mermaid text in this page. The browser draws them from a CDN script when the page loads.

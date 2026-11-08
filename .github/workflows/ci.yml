@@ -194,6 +194,10 @@ jobs:
     # Every commit in the pull request, and the PR title (the squash commit subject), must follow
     # Conventional Commits. Rules: docs/engineering/commit-conventions.md.
     name: commit-lint
+    # Pull requests only. A push to main re-checks history that already passed this job on
+    # its pull request, and older commits on main predate the rule, so a push run would fail
+    # on them.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

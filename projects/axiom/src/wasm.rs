@@ -358,4 +358,46 @@ mod tests {
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].lane, 2, "third lane overall");
     }
+
+    // The FFI functions are the browser's only entry point, so they need direct
+    // tests too. Each test runs on its own thread, so the thread-local world is
+    // fresh for every test.
+
+    #[test]
+    fn ffi_exports_drive_a_fed_item_end_to_end() {
+        axiom_init(2, 40, 2);
+        assert_eq!(axiom_tick_count(), 0);
+        assert_eq!(axiom_feed(5), 1, "empty head lane accepts");
+        assert_eq!(axiom_feed(0x1_0000), 0, "id above u16::MAX is refused");
+        axiom_step(3);
+        assert_eq!(axiom_tick_count(), 3);
+        assert_eq!(axiom_snapshot_items(), 1);
+        assert_eq!(axiom_item_id(0), 5);
+        assert_eq!(axiom_item_lane(0), 0);
+        assert_eq!(axiom_item_offset(0), 6, "3 ticks at speed 2");
+        assert_eq!(axiom_item_id(9), 0, "out-of-range index reads as 0");
+        assert_eq!(axiom_item_lane(9), 0);
+        assert_eq!(axiom_item_offset(9), 0);
+        assert_eq!(axiom_sunk(), 0);
+        let hash = (u64::from(axiom_state_hash_hi()) << 32) | u64::from(axiom_state_hash_lo());
+        assert_ne!(hash, 0, "a non-empty world has a non-trivial hash");
+    }
+
+    #[test]
+    fn ffi_exports_are_no_ops_without_a_valid_world() {
+        // Before any init the world is absent.
+        assert_eq!(axiom_snapshot_items(), 0);
+        assert_eq!(axiom_feed(1), 0);
+        axiom_step(10);
+        assert_eq!(axiom_tick_count(), 0);
+        assert_eq!(axiom_sunk(), 0);
+        assert_eq!(axiom_state_hash_lo(), 0);
+        assert_eq!(axiom_state_hash_hi(), 0);
+
+        // An invalid layout clears the world, so the same no-ops apply.
+        axiom_init(0, 40, 2);
+        assert_eq!(axiom_feed(1), 0);
+        assert_eq!(axiom_snapshot_items(), 0);
+        assert_eq!(axiom_item_id(0), 0);
+    }
 }
