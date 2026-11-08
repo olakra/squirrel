@@ -1,0 +1,40 @@
+# axiom-steam: Steam depot templates in projects/axiom/steam. Rendering needs the Steam IDs and
+# staging path from CI secrets, so the package task is never cached.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'python'
+
+project:
+  name: 'axiom-steam'
+  description: 'Steam depot templates and the renderer that fills them from environment variables.'
+
+dependsOn:
+  - 'axiom-desktop'
+
+fileGroups:
+  sources:
+    - '/projects/axiom/steam/*.vdf'
+    - '/projects/axiom/steam/render_vdf.py'
+
+tasks:
+  check:
+    script: |
+      python3 -I -c "import ast, pathlib; ast.parse(pathlib.Path('projects/axiom/steam/render_vdf.py').read_text(encoding='utf-8'))"
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  package:
+    # Output depends on STEAM_* and AXIOM_STAGING_DIR, which are not task inputs. Caching it
+    # could serve a depot for the wrong app or depot IDs, so it always runs.
+    deps:
+      - 'axiom-desktop:package'
+    script: |
+      python3 -I projects/axiom/steam/render_vdf.py --out dist/steam
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+      cache: false

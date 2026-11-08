@@ -1,0 +1,14 @@
+# Pinned tool versions for every task run through moon. One source of truth for the tools that
+# the other config files name. Rust is not pinned here: cargo reads projects/axiom/rust-toolchain.toml,
+# which does not exist yet (follow-up in docs/engineering/adr/0003-monorepo-orchestration.md).
+# Version values marked "verify" are not checked against a registry from this sandbox.
+$schema: 'https://moonrepo.dev/schemas/toolchain.json'
+
+bun:
+  version: '1.4.4' # Same version as desktop/package.json packageManager and steam-build.yml BUN_VERSION.
+
+node:
+  version: '22' # verify. Minimum from desktop/package.json engines (node >=22).
+
+python:
+  version: '3.13' # verify. Only stdlib Python is used (steam/render_vdf.py).

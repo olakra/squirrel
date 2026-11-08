@@ -1,0 +1,48 @@
+# axiom-core: the simulation crate in projects/axiom (Rust). Sources are not in this folder.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'rust'
+
+project:
+  name: 'axiom-core'
+  description: 'Deterministic simulation core of the axiom crate. Native targets, Rust.'
+
+fileGroups:
+  sources:
+    - '/projects/axiom/src/**/*'
+    - '/projects/axiom/benches/**/*'
+    - '/projects/axiom/Cargo.toml'
+    - '/projects/axiom/Cargo.lock'
+    - '/projects/axiom/rustfmt.toml'
+    - '/projects/axiom/clippy.toml'
+    - '/projects/axiom/.cargo/**/*'
+
+tasks:
+  check:
+    script: |
+      cd projects/axiom
+      cargo fmt --all -- --check
+      cargo clippy --all-targets --all-features -- -D warnings
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  test:
+    script: |
+      cd projects/axiom
+      cargo test --all-targets
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  build:
+    script: |
+      cd projects/axiom
+      cargo build --release
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true

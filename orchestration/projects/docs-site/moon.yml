@@ -1,0 +1,35 @@
+# docs-site: the Markdown documentation under docs/ and projects/axiom/docs. It depends on the crate
+# because its diagrams and paths describe the crate. Today the check lints Markdown only. A
+# diagram-to-source check does not exist yet. The source inputs make that check re-run on change.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'other'
+
+project:
+  name: 'docs-site'
+  description: 'Engineering docs and specs. Markdown lint today. Diagram-to-source check planned.'
+
+dependsOn:
+  - 'axiom-core'
+
+fileGroups:
+  sources:
+    - '/docs/**/*.md'
+    - '/projects/axiom/docs/**/*.md'
+    - '/.markdownlint.jsonc'
+    - '/.markdownlint-cli2.jsonc'
+  source-of-truth:
+    - '/projects/axiom/src/**/*'
+
+tasks:
+  check:
+    # Uses npx, which downloads markdownlint-cli2 from the npm registry during the task. That is a
+    # network step inside a build task. Replace it with a pinned tool from .moon/toolchain.yml.
+    script: |
+      npx --yes markdownlint-cli2@0.23.2 "docs/**/*.md" "projects/axiom/docs/**/*.md"
+    inputs:
+      - '@group(sources)'
+      - '@group(source-of-truth)'
+    options:
+      runFromWorkspaceRoot: true

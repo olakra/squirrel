@@ -1,0 +1,41 @@
+# axiom-web: the browser harness in projects/axiom/web. It has no bundler and no package.json yet,
+# so "build" checks that the static bundle is complete. If a bundler is added, change this file.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'javascript'
+
+project:
+  name: 'axiom-web'
+  description: 'Browser harness for the axiom simulation. Static files plus axiom.wasm, run with Bun.'
+
+dependsOn:
+  - 'axiom-wasm'
+
+fileGroups:
+  sources:
+    - '/projects/axiom/web/*.html'
+    - '/projects/axiom/web/*.js'
+    - '/projects/axiom/web/styles/**/*'
+
+tasks:
+  test:
+    script: |
+      cd projects/axiom/web
+      bun test
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  build:
+    deps:
+      - 'axiom-wasm:build'
+    script: |
+      test -f projects/axiom/web/index.html
+      test -f projects/axiom/web/axiom.wasm
+    inputs:
+      - '@group(sources)'
+      - '/projects/axiom/web/axiom.wasm'
+    options:
+      runFromWorkspaceRoot: true

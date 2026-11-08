@@ -1,0 +1,50 @@
+# ci-scripts: the governance and release scripts in scripts/ci. release-verify reads the crate
+# version and changelog, so this project depends on axiom-core.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'bash'
+
+project:
+  name: 'ci-scripts'
+  description: 'Commit, changelog, tag and benchmark checks used by CI and by the release pipeline.'
+
+dependsOn:
+  - 'axiom-core'
+
+fileGroups:
+  sources:
+    - '/scripts/ci/**/*.sh'
+  release-inputs:
+    - '/projects/axiom/Cargo.toml'
+    - '/projects/axiom/CHANGELOG.md'
+
+tasks:
+  check:
+    script: |
+      bash -n scripts/ci/*.sh
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  test:
+    script: |
+      bash scripts/ci/check-commit-messages.sh --self-test
+      bash scripts/ci/check-changelog.sh --self-test
+      bash scripts/ci/extract-changelog.sh --self-test
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  release-verify:
+    # Local mode, the same as `make release-check`. It tags nothing. CI mode (the verify job in
+    # release.yml) needs the tag name and GH_TOKEN, and is not wired to this task yet.
+    script: |
+      bash scripts/ci/check-release-tag.sh --local
+    inputs:
+      - '@group(sources)'
+      - '@group(release-inputs)'
+    options:
+      runFromWorkspaceRoot: true

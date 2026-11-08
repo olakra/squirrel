@@ -1,0 +1,20 @@
+# Moon workspace for the squirrel monorepo. Decision record:
+# docs/engineering/adr/0003-monorepo-orchestration.md. Dependency graph: docs/engineering/build-graph.md.
+#
+# Project definitions live in orchestration/projects/<id>/moon.yml. Each one points at the real
+# source folder with workspace-relative paths, so no project directory needs a new file yet. When
+# a project's owner is ready, its moon.yml can move next to the code and only its line below changes.
+$schema: 'https://moonrepo.dev/schemas/workspace.json'
+
+vcs:
+  client: 'git'
+  defaultBranch: 'main'
+
+projects:
+  axiom-core: 'orchestration/projects/axiom-core'
+  axiom-wasm: 'orchestration/projects/axiom-wasm'
+  axiom-web: 'orchestration/projects/axiom-web'
+  axiom-desktop: 'orchestration/projects/axiom-desktop'
+  axiom-steam: 'orchestration/projects/axiom-steam'
+  docs-site: 'orchestration/projects/docs-site'
+  ci-scripts: 'orchestration/projects/ci-scripts'
