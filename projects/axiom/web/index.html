@@ -3,16 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>Project Axiom</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #1E222A; color: #cfd6e4; font-family: system-ui, sans-serif; }
+    html, body { margin: 0; height: 100%; background: #1E222A; color: #cfd6e4; }
     canvas { display: block; width: 100vw; height: 100vh; }
-    #status { position: fixed; top: 8px; left: 8px; font: 12px monospace; background: rgba(0,0,0,.45); padding: 6px 8px; border-radius: 4px; }
   </style>
+  <link rel="stylesheet" href="./styles/deck.css">
 </head>
 <body>
-  <div id="status">booting…</div>
-  <canvas id="view"></canvas>
+  <div id="status" role="status" aria-live="polite">booting…</div>
+  <div id="wasm-note" role="status" hidden></div>
+  <canvas id="view" aria-label="Factory view"></canvas>
+  <div id="markers" aria-hidden="true"></div>
+  <div id="cursor" aria-hidden="true"></div>
+  <footer id="hints" aria-label="Controls">
+    <ul id="hint-list"></ul>
+  </footer>
   <script type="module" src="./main.js"></script>
 </body>
 </html>
