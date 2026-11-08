@@ -1,0 +1,11 @@
+{
+  // Start from the markdownlint defaults, then tune for this repo.
+  "default": true,
+  // Long prose lines are allowed up to 120 characters. Tables and code blocks are
+  // exempt so pipe tables and command examples stay readable.
+  "MD013": { "line_length": 120, "tables": false, "code_blocks": false },
+  // Table pipe spacing is a cosmetic rule. Existing tables use compact pipes.
+  "MD060": false,
+  // Inline HTML (e.g. <details>) is valid GitHub Markdown.
+  "MD033": false
+}

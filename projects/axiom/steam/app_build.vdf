@@ -1,0 +1,16 @@
+"AppBuild"
+{
+	"AppID" "${STEAM_APP_ID}"
+	"Desc" "Axiom ${AXIOM_BUILD_DESC}"
+	"Preview" "0"
+	"Local" ""
+	"SetLive" "${AXIOM_SET_LIVE}"
+	"ContentRoot" "${AXIOM_STAGING_DIR}"
+	"BuildOutput" "${AXIOM_BUILD_OUTPUT}"
+	"Depots"
+	{
+		"${STEAM_DEPOT_WINDOWS_ID}" "depot_build_windows.vdf"
+		"${STEAM_DEPOT_LINUX_ID}" "depot_build_linux.vdf"
+		"${STEAM_DEPOT_MACOS_ID}" "depot_build_macos.vdf"
+	}
+}

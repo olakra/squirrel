@@ -1,0 +1,61 @@
+# axiom-wasm: the browser WebAssembly build of the axiom crate. The build script is
+# projects/axiom/scripts/build-wasm.sh. It writes projects/axiom/web/axiom.wasm.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'rust'
+
+project:
+  name: 'axiom-wasm'
+  description: 'WebAssembly build of the axiom crate, written to projects/axiom/web/axiom.wasm.'
+
+dependsOn:
+  - 'axiom-core'
+
+fileGroups:
+  sources:
+    - '/projects/axiom/src/**/*'
+    - '/projects/axiom/Cargo.toml'
+    - '/projects/axiom/Cargo.lock'
+    - '/projects/axiom/.cargo/**/*'
+    - '/projects/axiom/scripts/build-wasm.sh'
+
+tasks:
+  check:
+    script: |
+      bash -n projects/axiom/scripts/build-wasm.sh
+    inputs:
+      - '/projects/axiom/scripts/build-wasm.sh'
+    options:
+      runFromWorkspaceRoot: true
+
+  build:
+    # The wasm artifact is never built from a crate that fails its tests.
+    deps:
+      - 'axiom-core:test'
+    script: |
+      bash projects/axiom/scripts/build-wasm.sh
+    inputs:
+      - '@group(sources)'
+    outputs:
+      - '/projects/axiom/web/axiom.wasm'
+    options:
+      runFromWorkspaceRoot: true
+
+  package:
+    # Release packaging: the version must pass the release rules before an artifact is named.
+    deps:
+      - '~:build'
+      - 'ci-scripts:release-verify'
+    script: |
+      version="$(sed -n 's/^version = "\(.*\)"$/\1/p' projects/axiom/Cargo.toml | head -n 1)"
+      mkdir -p dist
+      cp projects/axiom/web/axiom.wasm "dist/axiom-${version}.wasm"
+      (cd dist && sha256sum "axiom-${version}.wasm" > SHA256SUMS)
+    inputs:
+      - '/projects/axiom/web/axiom.wasm'
+      - '/projects/axiom/Cargo.toml'
+    outputs:
+      - '/dist/**/*'
+    options:
+      runFromWorkspaceRoot: true

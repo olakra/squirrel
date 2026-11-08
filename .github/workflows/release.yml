@@ -1,0 +1,146 @@
+# Release pipeline. Runs when a tag such as v0.1.1 is pushed.
+#
+# Order: verify (tag rules) -> ci (make ci, the same gates as ci.yml) -> build (wasm and
+# checksums) -> release (waits for approval in the "production" environment, then publishes
+# the GitHub release and the build attestation).
+#
+# The runbook is docs/engineering/release-process.md. Tags are never moved or deleted:
+# see docs/engineering/tag-protection.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+# No token rights at the top level. Each job grants only what it needs.
+permissions: {}
+
+# One release run per tag at a time. A running release is never cancelled.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AXIOM_DIR: projects/axiom
+
+jobs:
+  verify:
+    # Fails unless the tag is an annotated vMAJOR.MINOR.PATCH tag that equals the Cargo.toml
+    # version, has a CHANGELOG section, sits on main, and has no release yet.
+    name: verify tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: fetch origin/main for the reachability check
+        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+      - name: check the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci/check-release-tag.sh "$GITHUB_REF_NAME"
+
+  ci:
+    # The same gates as ci.yml, run through make so the commands are not copied.
+    name: make ci
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: install Rust components and targets
+        run: |
+          rustup component add rustfmt clippy llvm-tools-preview
+          rustup target add wasm32-unknown-unknown
+          rustup toolchain install nightly --profile minimal --component rust-src --target wasm32-unknown-unknown
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov,cargo-deny
+      - name: make ci
+        run: make ci
+
+  build:
+    # Builds the threaded wasm (nightly with build-std, as scripts/build-wasm.sh prefers) and
+    # packages it with a SHA-256 checksum file.
+    name: build wasm
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: install toolchains
+        run: |
+          rustup target add wasm32-unknown-unknown
+          rustup toolchain install nightly --profile minimal --component rust-src --target wasm32-unknown-unknown
+      - name: build axiom.wasm
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: bash scripts/build-wasm.sh
+      - name: package axiom-<version>.wasm and SHA256SUMS
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          cp "$AXIOM_DIR/web/axiom.wasm" "dist/axiom-${version}.wasm"
+          (cd dist && sha256sum "axiom-${version}.wasm" > SHA256SUMS)
+          cat dist/SHA256SUMS
+      - name: upload release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    # Waits for a reviewer in the "production" environment. The owner must configure it:
+    # see docs/engineering/branch-protection.md.
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+    permissions:
+      contents: write       # create the GitHub release and upload its files
+      id-token: write       # sign the build provenance attestation
+      attestations: write   # store the attestation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist
+      - name: verify checksums
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS
+      - name: extract release notes from CHANGELOG
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          bash scripts/ci/extract-changelog.sh "$version" "$AXIOM_DIR/CHANGELOG.md" > release-notes.md
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: dist/*.wasm
+      - name: create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          prerelease=()
+          case "$version" in
+            *-*) prerelease=(--prerelease) ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "axiom $GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            "${prerelease[@]}" \
+            "dist/axiom-${version}.wasm" \
+            dist/SHA256SUMS

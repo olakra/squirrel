@@ -1,0 +1,244 @@
+# Steam build for Axiom.
+#
+# 1. Build axiom.wasm once.
+# 2. Package the desktop shell for Linux, Windows and macOS (unpacked, not installers).
+# 3. On a v* tag, and only when the Steam secrets are set, upload the three depots to a
+#    Steam preview build. The build is never set live here.
+#
+# One-time owner steps, the secret names and what each one holds: projects/axiom/steam/README.md.
+# This workflow does not touch ci.yml or release.yml.
+name: Steam build
+
+# ON HOLD: Steam integration is paused until the owner confirms. Tag pushes do not
+# trigger this workflow. Re-enable with: tags: ["v*"]
+on:
+  workflow_dispatch:
+
+# Read-only token by default. Only the jobs below need anything else, and they need nothing extra.
+permissions:
+  contents: read
+
+env:
+  DESKTOP_DIR: projects/axiom/desktop
+  AXIOM_DIR: projects/axiom
+  BUN_VERSION: "1.4.4"
+
+jobs:
+  wasm:
+    name: build axiom.wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      - name: build wasm
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: bash scripts/build-wasm.sh
+      - name: upload axiom.wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiom-wasm
+          path: projects/axiom/web/axiom.wasm
+          if-no-files-found: error
+          retention-days: 7
+
+  js-test:
+    name: JavaScript tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: test web input logic
+        working-directory: ${{ env.AXIOM_DIR }}/web
+        run: bun test
+      - name: test desktop scripts
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: bun run test
+
+  desktop:
+    name: desktop (${{ matrix.depot }})
+    needs: [wasm, js-test]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            depot: linux
+            builder: "--linux"
+          - os: windows-latest
+            depot: windows
+            builder: "--win"
+          - os: macos-latest
+            depot: macos
+            builder: "--mac --universal"
+    steps:
+      - uses: actions/checkout@v4
+      # Bun installs and runs the scripts. Electron's own install script runs on Node.js, which
+      # GitHub-hosted runners already include. No setup-node step is needed for that.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+      - name: download axiom.wasm
+        uses: actions/download-artifact@v4
+        with:
+          name: axiom-wasm
+          path: projects/axiom/web
+      - name: check bun.lock is committed
+        shell: bash
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: |
+          if [ ! -f bun.lock ]; then
+            echo "::error::projects/axiom/desktop/bun.lock is missing. Run 'bun install' there once and commit bun.lock."
+            exit 1
+          fi
+      - name: install desktop dependencies
+        working-directory: ${{ env.DESKTOP_DIR }}
+        # Fails when bun.lock does not match package.json, so CI never resolves new versions.
+        run: bun install --frozen-lockfile
+      - name: package unpacked app
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: |
+          bun run prepare-web
+          bunx electron-builder ${{ matrix.builder }} --dir --publish never
+      - name: stage depot folder
+        working-directory: ${{ env.DESKTOP_DIR }}
+        run: bun scripts/stage-depot.mjs ${{ matrix.depot }}
+      - name: archive depot (tar keeps file modes and symlinks)
+        working-directory: ${{ env.DESKTOP_DIR }}/dist/staging
+        shell: bash
+        run: tar -czf "../depot-${{ matrix.depot }}.tar.gz" "${{ matrix.depot }}"
+      - name: upload depot archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: depot-${{ matrix.depot }}
+          path: ${{ env.DESKTOP_DIR }}/dist/depot-${{ matrix.depot }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  steam-check:
+    name: check Steam secrets
+    needs: desktop
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      # Secrets cannot appear in an `if:` expression. This step turns "are they set" into a plain flag.
+      # It prints secret names only, never values.
+      - id: check
+        name: check which Steam secrets are set
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+          STEAM_APP_ID: ${{ secrets.STEAM_APP_ID }}
+          STEAM_DEPOT_WINDOWS_ID: ${{ secrets.STEAM_DEPOT_WINDOWS_ID }}
+          STEAM_DEPOT_LINUX_ID: ${{ secrets.STEAM_DEPOT_LINUX_ID }}
+          STEAM_DEPOT_MACOS_ID: ${{ secrets.STEAM_DEPOT_MACOS_ID }}
+        run: |
+          missing=""
+          for name in STEAM_USERNAME STEAM_CONFIG_VDF STEAM_APP_ID STEAM_DEPOT_WINDOWS_ID STEAM_DEPOT_LINUX_ID STEAM_DEPOT_MACOS_ID; do
+            if [ -z "${!name:-}" ]; then
+              missing="$missing $name"
+            fi
+          done
+          if [ -z "$missing" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "All Steam secrets are set. Steam upload is enabled."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Steam upload skipped. Missing secret names:$missing"
+          fi
+
+  steam-upload:
+    name: upload depots to Steam (preview)
+    needs: [desktop, steam-check]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.steam-check.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # One upload at a time. Two uploads of the same app would race on the build branch.
+    concurrency:
+      group: steam-upload
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: download depot archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: depot-*
+          path: ${{ runner.temp }}/depots
+          merge-multiple: true
+      - name: unpack depots into staging
+        run: |
+          set -euo pipefail
+          STAGING="$RUNNER_TEMP/steam-staging"
+          mkdir -p "$STAGING"
+          for platform in windows linux macos; do
+            tar -xzf "$RUNNER_TEMP/depots/depot-$platform.tar.gz" -C "$STAGING"
+          done
+          ls -la "$STAGING"
+      - name: install steamcmd (official Linux installer)
+        run: |
+          set -euo pipefail
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y lib32gcc-s1 lib32stdc++6
+          mkdir -p "$RUNNER_TEMP/steamcmd"
+          curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz \
+            | tar -xz -C "$RUNNER_TEMP/steamcmd"
+      - name: write login token (never printed)
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+          STEAM_CONFIG_VDF: ${{ secrets.STEAM_CONFIG_VDF }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$STEAM_USERNAME"
+          mkdir -p "$RUNNER_TEMP/steamcmd/config"
+          printf '%s' "$STEAM_CONFIG_VDF" | base64 -d > "$RUNNER_TEMP/steamcmd/config/config.vdf"
+          chmod 600 "$RUNNER_TEMP/steamcmd/config/config.vdf"
+      - name: render steamcmd scripts
+        env:
+          STEAM_APP_ID: ${{ secrets.STEAM_APP_ID }}
+          STEAM_DEPOT_WINDOWS_ID: ${{ secrets.STEAM_DEPOT_WINDOWS_ID }}
+          STEAM_DEPOT_LINUX_ID: ${{ secrets.STEAM_DEPOT_LINUX_ID }}
+          STEAM_DEPOT_MACOS_ID: ${{ secrets.STEAM_DEPOT_MACOS_ID }}
+          AXIOM_STAGING_DIR: ${{ runner.temp }}/steam-staging
+          AXIOM_BUILD_DESC: ${{ github.ref_name }}
+          AXIOM_SET_LIVE: ""
+        run: |
+          set -euo pipefail
+          for name in STEAM_APP_ID STEAM_DEPOT_WINDOWS_ID STEAM_DEPOT_LINUX_ID STEAM_DEPOT_MACOS_ID; do
+            echo "::add-mask::${!name}"
+          done
+          python3 projects/axiom/steam/render_vdf.py --out "$RUNNER_TEMP/steam-build"
+      - name: upload to Steam preview
+        env:
+          STEAM_USERNAME: ${{ secrets.STEAM_USERNAME }}
+        run: |
+          STEAMCMD="$RUNNER_TEMP/steamcmd/steamcmd.sh"
+          LOG="$RUNNER_TEMP/steamcmd-upload.log"
+          set +e
+          "$STEAMCMD" +login "$STEAM_USERNAME" +run_app_build "$RUNNER_TEMP/steam-build/app_build.vdf" +quit 2>&1 | tee "$LOG"
+          status=${PIPESTATUS[0]}
+          set -e
+          # Exit codes alone are not trusted for steamcmd. Also fail on error lines in the log.
+          # Verify these strings against your steamcmd version.
+          if [ "$status" -ne 0 ] || grep -qiE 'error!|upload failed' "$LOG"; then
+            echo "steamcmd upload failed (exit $status)"
+            exit 1
+          fi
+          echo "steamcmd upload finished. The build is a preview, not live."
+      - name: remove login token
+        if: always()
+        run: rm -f "$RUNNER_TEMP/steamcmd/config/config.vdf"

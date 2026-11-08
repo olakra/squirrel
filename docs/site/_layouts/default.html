@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{{ page.title }} | {{ site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <link rel="stylesheet" href="{{ site.baseurl }}/assets/site.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="site-title" href="{{ site.baseurl }}/index.html">{{ site.title }}</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="{{ site.baseurl }}/index.html">Overview</a>
+      <a href="{{ site.baseurl }}/engineering/index.html">Engineering</a>
+      <a href="{{ site.baseurl }}/engineering/adr/index.html">ADRs</a>
+      <a href="{{ site.baseurl }}/axiom/architecture.html">Architecture</a>
+      <a href="{{ site.baseurl }}/diagrams.html">Diagrams</a>
+      <a href="{{ site.roadmap_url }}">Roadmap</a>
+      <a href="{{ site.specs_url }}">Specs</a>
+    </nav>
+  </header>
+  <main class="content">
+    {{ content }}
+  </main>
+  <footer class="site-footer">
+    Generated from the Markdown in <a href="{{ site.repo_url }}">{{ site.repo_url }}</a> by docs/site/build.py.
+  </footer>
+  {% include mermaid.html %}
+</body>
+</html>

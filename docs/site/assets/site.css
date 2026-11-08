@@ -1,0 +1,168 @@
+/* Light and dark colours come from the tokens on :root. Dark mode follows the OS setting unless
+   the page sets data-theme="light". data-theme="dark" forces dark mode. */
+:root {
+  color-scheme: light dark;
+  --bg: #fbfbf9;
+  --fg: #1d2129;
+  --muted: #5b6372;
+  --link: #1f5fbf;
+  --rule: #d9dce1;
+  --code-bg: #f1f3f5;
+  --accent: #b07a00;
+  --max-width: 52rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181e;
+    --fg: #e6e8ec;
+    --muted: #9aa3b2;
+    --link: #7fb2ff;
+    --rule: #2c313b;
+    --code-bg: #1e232b;
+    --accent: #ffb81c;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #15181e;
+  --fg: #e6e8ec;
+  --muted: #9aa3b2;
+  --link: #7fb2ff;
+  --rule: #2c313b;
+  --code-bg: #1e232b;
+  --accent: #ffb81c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: var(--link); }
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 0.9rem 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.site-title {
+  font-weight: 700;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  font-size: 0.95rem;
+}
+
+.content {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.25rem 16px 3rem;
+  overflow-wrap: break-word;
+}
+
+.content h1,
+.content h2,
+.content h3,
+.content h4 {
+  line-height: 1.25;
+  scroll-margin-top: 1rem;
+}
+
+.content h1 { font-size: 1.85rem; margin-top: 0; }
+.content h2 { font-size: 1.4rem; margin-top: 2rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule); }
+.content h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+
+.content li > p { margin: 0.25rem 0; }
+.content li { margin: 0.2rem 0; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--code-bg);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+pre {
+  overflow-x: auto;
+  background: var(--code-bg);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  line-height: 1.45;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  border: 1px solid var(--rule);
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+blockquote {
+  margin: 1rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2rem 0;
+}
+
+.mermaid {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.site-footer {
+  padding: 1rem 16px 2rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.85rem;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  .site-nav { font-size: 0.9rem; }
+  .content h1 { font-size: 1.5rem; }
+}

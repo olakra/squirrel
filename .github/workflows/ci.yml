@@ -1,0 +1,231 @@
+# CI for the squirrel monorepo.
+#
+# Each gate is a separate job so a failure names the gate that broke.
+# The local equivalent is `make ci` (see Makefile). Keep the two in step.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    # labeled and unlabeled re-run the changelog-check job, so adding "no-changelog" takes effect.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+# Read-only token by default. A job that needs more must opt in.
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the superseded run. Runs on main always finish.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Location of the Rust crate. Change it here only; every cargo step uses it.
+  AXIOM_DIR: projects/axiom
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: cargo fmt --check
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: cargo fmt --all -- --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      # -D warnings turns every clippy warning into a failure. This is the
+      # "zero clippy warnings" gate. clippy.toml sets thresholds only.
+      - name: cargo clippy
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      # Native tests only. The determinism regression (fixed-tick state hash) runs here on
+      # every OS, so a platform-dependent result shows up as a failure.
+      - name: cargo test
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: cargo test --all-targets
+
+  coverage:
+    # Quality gate. cargo-llvm-cov runs the tests and fails the job below these thresholds:
+    #   lines >= 90%, functions >= 90%, regions >= 85%.
+    # Line and function coverage measure how much of the code the tests execute. Region
+    # coverage counts branches within lines, which is stricter, so its threshold is lower.
+    # The job does not measure whether the tests check the right things. Review does that.
+    name: coverage gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      - name: cargo llvm-cov (fails below thresholds)
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: >-
+          cargo llvm-cov
+          --fail-under-lines 90
+          --fail-under-functions 90
+          --fail-under-regions 85
+
+  bench-smoke:
+    # Smoke test only. It proves the benchmarks build, run, and print results.
+    # It does not judge performance: shared CI runners are too noisy for timing gates.
+    # Performance is reviewed as a trend (see docs/engineering/quality-gates.md).
+    name: bench smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      - name: run belt_throughput (quick mode)
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: cargo bench --bench belt_throughput -- --quick | tee bench-smoke.log
+      - name: check that results were printed
+        run: bash scripts/ci/check-bench-output.sh "${{ env.AXIOM_DIR }}/bench-smoke.log"
+      - name: upload bench output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-smoke-log
+          path: ${{ env.AXIOM_DIR }}/bench-smoke.log
+          if-no-files-found: error
+
+  wasm:
+    name: wasm build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      # The script owns the build flags (atomics, shared memory). This job only calls it.
+      - name: build wasm
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: bash scripts/build-wasm.sh
+      - name: upload axiom.wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiom-wasm
+          path: ${{ env.AXIOM_DIR }}/web/axiom.wasm
+          if-no-files-found: error
+
+  supply-chain:
+    # Licenses, known advisories, yanked and unmaintained crates, banned sources.
+    # Policy lives in projects/axiom/deny.toml.
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: cargo deny check
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: cargo deny check
+
+  docs:
+    # Lints every Markdown file in the repo. Rules: .markdownlint.jsonc.
+    # Excluded paths: .markdownlint-cli2.jsonc.
+    name: markdownlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: markdownlint-cli2
+        run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"
+
+  commit-lint:
+    # Every commit in the pull request, and the PR title (the squash commit subject), must follow
+    # Conventional Commits. Rules: docs/engineering/commit-conventions.md.
+    name: commit-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: check commit subjects in the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/ci/check-commit-messages.sh "$BASE_SHA" "$HEAD_SHA"
+      - name: check the pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: bash scripts/ci/check-commit-messages.sh --subject "$PR_TITLE"
+
+  changelog-check:
+    # Fails when projects/axiom/src or Cargo.toml changes without a CHANGELOG.md entry.
+    # The label "no-changelog" opts out. Script and rules: scripts/ci/check-changelog.sh.
+    name: changelog-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: check the changelog for axiom changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/ci/check-changelog.sh "$BASE_SHA" "$HEAD_SHA"

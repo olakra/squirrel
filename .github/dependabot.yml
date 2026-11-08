@@ -1,0 +1,18 @@
+version: 2
+updates:
+  # Rust crate. Dependabot reads Cargo.toml and Cargo.lock in this directory.
+  - package-ecosystem: cargo
+    directory: /projects/axiom
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Workflow action versions. Workflows live at the repo root, so the directory is "/".
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # No npm entry yet: projects/axiom/web is plain JavaScript with no package.json.
+  # Add an npm entry here when a package.json exists.

@@ -1,0 +1,62 @@
+# axiom-desktop: the Electron shell in projects/axiom/desktop. Its package script copies web/ into
+# desktop/app-web. Tasks are the bun scripts already in desktop/package.json.
+# Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'javascript'
+
+project:
+  name: 'axiom-desktop'
+  description: 'Electron desktop shell for Axiom. Runs the bundled web harness offline.'
+
+dependsOn:
+  - 'axiom-web'
+
+fileGroups:
+  sources:
+    - '/projects/axiom/desktop/main.js'
+    - '/projects/axiom/desktop/preload.js'
+    - '/projects/axiom/desktop/package.json'
+    - '/projects/axiom/desktop/electron-builder.yml'
+    - '/projects/axiom/desktop/scripts/**/*'
+    - '/projects/axiom/desktop/test/**/*'
+
+tasks:
+  fetch:
+    # Network step. The only task allowed to download dependencies. Needs bun.lock, which is not
+    # committed yet, so --frozen-lockfile fails until it is (follow-up for the Bun migration owner).
+    script: |
+      cd projects/axiom/desktop
+      bun install --frozen-lockfile
+    inputs:
+      - '/projects/axiom/desktop/package.json'
+      - '/projects/axiom/desktop/bun.lock'
+    options:
+      runFromWorkspaceRoot: true
+      cache: false
+
+  test:
+    deps:
+      - '~:fetch'
+    script: |
+      cd projects/axiom/desktop
+      bun test test
+    inputs:
+      - '@group(sources)'
+    options:
+      runFromWorkspaceRoot: true
+
+  package:
+    deps:
+      - '~:fetch'
+      - 'axiom-web:build'
+    script: |
+      cd projects/axiom/desktop
+      bun run dist:linux
+    inputs:
+      - '@group(sources)'
+      - '/projects/axiom/web/**/*'
+    outputs:
+      - '/projects/axiom/desktop/dist/**/*'
+    options:
+      runFromWorkspaceRoot: true

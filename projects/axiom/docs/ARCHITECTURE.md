@@ -1,17 +1,20 @@
-# Project Axiom: Architecture (Milestone 0)
+# Project Axiom: Architecture (Milestone 1)
 
 ## Status
 
 | Area | State |
 |---|---|
-| Interval-queue belt lane + chain | Implemented, tested |
-| Fixed-timestep world + state hash | Implemented, tested |
-| 1,000-tick determinism regression | Implemented (hash parity across runs) |
-| Splitters, mergers, inserters | Not started |
-| WASM bindings (`wasm-bindgen`) | Not started (needs registry access) |
-| Web Worker simulation + SharedArrayBuffer | Harness only, no WASM yet |
-| Rendering (instanced sprites, WebGL2) | Placeholder canvas only |
-| Criterion benchmarks | Not started (needs registry access) |
+| Ring-buffer belt lane + chain (O(1) rear insert and front pop) | Implemented, tested (incl. differential test) |
+| Splitter (deterministic round-robin, blocked-output routing) | Implemented, tested |
+| Inserter state machine with source reservation | Implemented, tested |
+| Chunk grid (32x32, sleep/wake, sorted iteration) | Implemented, tested; integrated into `World`: only active chunks tick, in sorted order (issue #1) |
+| Fixed-timestep world + FNV-1a state hash | Implemented, tested (1,000-tick determinism regression) |
+| Splitters and inserters wired into `World` | Implemented, tested: fixed four-phase tick order (inserter pick, chain advance, splitter route, inserter drop), hashed into state (issue #11) |
+| WASM C-ABI exports (`src/wasm.rs`) + build script | Implemented; `wasm32` build verified in CI only |
+| Web Worker simulation + SharedArrayBuffer | Harness and gamepad input only; sim not yet in worker (issue #14) |
+| Rendering (instanced sprites, WebGL2) | Placeholder canvas only (issue #13) |
+| Benchmarks (std-only `belt_throughput`) | Implemented; regression gate is a review rule (issue #4) |
+| Desktop shell (Electron) and Steam packaging | Implemented; not yet built on Steam (issues #15–#18) |
 
 ## Constraints in force
 
@@ -42,7 +45,8 @@ lane frees room before its upstream neighbour hands items over.
 1. **Rear insertion is O(N).** Switch to a ring buffer before adding
    200k-item stress tests.
 2. **Spec conflict on hashing.** The spec names both FNV-1a and Blake3. FNV-1a
-   is used now (no dependency). Swap in Blake3 when dependencies are available.
+   is kept for 0.1.1 (no dependency); see [ADR 0005](../../../docs/engineering/adr/0005-state-hash.md).
+   The switch to Blake3 is one release, with a Breaking changelog entry, once a dependency is allowed.
 3. **Spec conflict on fixed-point.** The spec allows `I32F32` or discrete
    integers. Discrete integers are used, which removes the `fixed` dependency.
 4. **Lane-end semantics.** A blocked front item rests at `length - SPACING`

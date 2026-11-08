@@ -1,0 +1,6 @@
+{
+  // Files excluded from markdownlint. Build output and dependencies are never linted.
+  // docs/specs holds master prompts that are pasted verbatim into external LLM tools,
+  // so they are not reformatted here.
+  "ignores": ["**/target/**", "**/node_modules/**", "docs/specs/**"]
+}

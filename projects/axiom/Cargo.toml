@@ -1,9 +1,10 @@
 [package]
 name = "axiom"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Project Axiom: deterministic 2D factory simulation core (Rust + WASM)"
 license = "UNLICENSED"
+publish = false
 
 # Deliberately dependency-free for the first deliverable so the simulation
 # core builds and tests offline. Planned additions (add when the registry is
@@ -22,3 +23,8 @@ strip = true
 [profile.bench]
 inherits = "release"
 debug = false
+
+[[bench]]
+name = "belt_throughput"
+harness = false
+path = "benches/belt_throughput.rs"

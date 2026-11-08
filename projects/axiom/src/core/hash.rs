@@ -21,7 +21,9 @@ impl Default for Fnv1a {
 impl Fnv1a {
     #[inline]
     pub const fn new() -> Self {
-        Self { state: OFFSET_BASIS }
+        Self {
+            state: OFFSET_BASIS,
+        }
     }
 
     #[inline]

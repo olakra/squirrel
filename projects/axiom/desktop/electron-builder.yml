@@ -1,0 +1,40 @@
+# electron-builder configuration for the Axiom desktop shell.
+#
+# Every target is `dir`: an unpacked folder, not an installer. Steam depots take
+# folders, and scripts/stage-depot.mjs copies those folders into the upload layout.
+#
+# PLACEHOLDERS: appId and the icons below must be set before a public release.
+# See steam/README.md, section "Before the first upload".
+
+appId: org.example.axiom
+productName: Axiom
+directories:
+  output: dist
+files:
+  - main.js
+  - preload.js
+  - package.json
+# web/ is copied to desktop/app-web by scripts/prepare-web.mjs and shipped outside the asar
+# archive, so the browser loads it as plain files.
+extraResources:
+  - from: app-web
+    to: app-web
+asar: true
+publish: null
+
+linux:
+  target:
+    - dir
+  executableName: axiom
+  category: Game
+
+win:
+  target:
+    - dir
+
+mac:
+  target:
+    - dir
+  category: public.app-category.games
+  # Unsigned until a Developer ID certificate is configured. See desktop/README.md.
+  identity: null
