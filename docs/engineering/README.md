@@ -24,6 +24,7 @@ Accepted decisions:
 Proposed decisions:
 
 - [ADR 0002: Tech stack, layer by layer](adr/0002-tech-stack.md)
+- [Tech stack summary](tech-stack-summary.md): one table of every layer, its status, and the reason.
 
 Reference:
 
