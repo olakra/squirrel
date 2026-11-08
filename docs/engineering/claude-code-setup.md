@@ -16,7 +16,7 @@ guide keeps the shared parts in git.
 
 ## Install Claude Code
 
-Check the current install commands at https://docs.claude.com before running them.
+Check the current install commands at [docs.claude.com](https://docs.claude.com) before running them.
 
 On Windows (PowerShell):
 
