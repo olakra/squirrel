@@ -1,0 +1,28 @@
+# GitHub's generated release notes ("Generate release notes" button, or the auto-generated text).
+# Categories match pull request LABELS. The labels below mirror the Conventional Commit types.
+# Create each label once in the repository. A PR without a type label lands under "Other".
+# The published release body comes from projects/axiom/CHANGELOG.md, not from this file.
+changelog:
+  categories:
+    - title: Breaking changes
+      labels: [breaking-change]
+    - title: Features
+      labels: [feat]
+    - title: Fixes
+      labels: [fix]
+    - title: Performance
+      labels: [perf]
+    - title: Refactoring
+      labels: [refactor]
+    - title: Documentation
+      labels: [docs]
+    - title: Tests
+      labels: [test]
+    - title: Build and CI
+      labels: [build, ci]
+    - title: Chores
+      labels: [chore]
+    - title: Reverts
+      labels: [revert]
+    - title: Other changes
+      labels: ["*"]

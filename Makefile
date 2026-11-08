@@ -45,3 +45,27 @@ docs:
 
 # Same order as the CI jobs: fmt, clippy, test, coverage, bench-smoke, wasm, supply-chain, docs.
 ci: fmt-check lint test cov bench wasm deny docs
+
+# Governance checks. These run the same scripts as the CI jobs commit-lint and changelog-check.
+# They need no network. commit-lint and changelog-check compare against BASE_REF (default origin/main).
+.PHONY: commit-lint changelog-check release-check scripts-test
+
+BASE_REF ?= origin/main
+HEAD_REF ?= HEAD
+
+commit-lint:
+	bash scripts/ci/check-commit-messages.sh "$(BASE_REF)" "$(HEAD_REF)"
+
+changelog-check:
+	bash scripts/ci/check-changelog.sh "$(BASE_REF)" "$(HEAD_REF)"
+
+# Checks the release tag rules against the Cargo.toml version. It tags nothing.
+release-check:
+	bash scripts/ci/check-release-tag.sh --local
+
+# Runs every script self-test. Each must exit 0.
+scripts-test:
+	bash -n scripts/ci/*.sh
+	bash scripts/ci/check-commit-messages.sh --self-test
+	bash scripts/ci/check-changelog.sh --self-test
+	bash scripts/ci/extract-changelog.sh --self-test

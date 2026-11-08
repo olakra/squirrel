@@ -8,6 +8,8 @@ on:
   push:
     branches: [main]
   pull_request:
+    # labeled and unlabeled re-run the changelog-check job, so adding "no-changelog" takes effect.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 # Read-only token by default. A job that needs more must opt in.
 permissions:
@@ -187,3 +189,43 @@ jobs:
           node-version: 22
       - name: markdownlint-cli2
         run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"
+
+  commit-lint:
+    # Every commit in the pull request, and the PR title (the squash commit subject), must follow
+    # Conventional Commits. Rules: docs/engineering/commit-conventions.md.
+    name: commit-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: check commit subjects in the pull request
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/ci/check-commit-messages.sh "$BASE_SHA" "$HEAD_SHA"
+      - name: check the pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: bash scripts/ci/check-commit-messages.sh --subject "$PR_TITLE"
+
+  changelog-check:
+    # Fails when projects/axiom/src or Cargo.toml changes without a CHANGELOG.md entry.
+    # The label "no-changelog" opts out. Script and rules: scripts/ci/check-changelog.sh.
+    name: changelog-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: check the changelog for axiom changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/ci/check-changelog.sh "$BASE_SHA" "$HEAD_SHA"
