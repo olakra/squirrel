@@ -1,0 +1,59 @@
+# Publishes the engineering docs site to GitHub Pages.
+#
+# The build is docs/site/build.sh: it renders the Markdown in docs/ and projects/axiom/docs/ and runs
+# the link and Mermaid checks. The site is served from the Actions deployment, so the repository needs
+# Settings > Pages > Source set to "GitHub Actions" (see docs/site/README.md).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "projects/axiom/docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# Read-only token by default. The deploy job alone adds the Pages rights.
+permissions:
+  contents: read
+
+# One deployment at a time. A running deployment is never cancelled.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build site
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: build the site
+        env:
+          SITE_BASEURL: ${{ steps.pages.outputs.base_path }}
+        run: bash docs/site/build.sh
+      - name: upload the site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/site/_site
+
+  deploy:
+    name: deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

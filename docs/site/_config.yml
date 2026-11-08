@@ -1,0 +1,15 @@
+# Site metadata for the engineering docs site.
+#
+# docs/site/build.py reads these flat key/value pairs. The file is also valid Jekyll config, but the
+# site is NOT built with Jekyll. See docs/site/README.md for why.
+
+title: "Squirrel: Engineering Docs"
+description: "Engineering standards, architecture decisions and diagrams for the squirrel monorepo."
+
+# Path the site is served under. The workflow sets it from the Pages base path, and the
+# SITE_BASEURL environment variable overrides it. Empty for a user site, "/squirrel" for a project site.
+baseurl: ""
+
+repo_url: "https://github.com/olakra/squirrel"
+roadmap_url: "https://github.com/olakra/squirrel/blob/main/docs/roadmap.md"
+specs_url: "https://github.com/olakra/squirrel/tree/main/docs/specs"
