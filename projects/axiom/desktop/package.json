@@ -1,0 +1,23 @@
+{
+  "name": "axiom-desktop",
+  "productName": "Axiom",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop shell for Project Axiom. Runs the bundled web/ build offline on Windows, macOS and Linux.",
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron .",
+    "prepare-web": "node scripts/prepare-web.mjs",
+    "dist:win": "npm run prepare-web && electron-builder --win --dir --publish never",
+    "dist:linux": "npm run prepare-web && electron-builder --linux --dir --publish never",
+    "dist:mac": "npm run prepare-web && electron-builder --mac --universal --dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.15.6"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "_comment": "Reference values for the Steamworks Launch Options page. No tool reads this file. Enter the values by hand. Names are placeholders until the depots exist.",
+  "launch_options": [
+    {
+      "description": "Windows 64-bit. Used on Windows, and under Proton on Steam Deck when no Linux option matches.",
+      "oslist": "windows",
+      "osarch": "64",
+      "executable": "Axiom.exe",
+      "arguments": ""
+    },
+    {
+      "description": "macOS. Electron produces an app bundle; the executable sits inside it.",
+      "oslist": "macos",
+      "executable": "Axiom.app/Contents/MacOS/Axiom",
+      "arguments": ""
+    },
+    {
+      "description": "Linux native, used on SteamOS (Steam Deck) and other Linux desktops.",
+      "oslist": "linux",
+      "osarch": "64",
+      "executable": "axiom",
+      "arguments": ""
+    }
+  ],
+  "fallbacks_not_enabled_by_default": {
+    "linux_arguments_no_sandbox": "--no-sandbox",
+    "use_only_if": "Deck test shows Electron aborting with a SUID or user-namespace sandbox error. Record the reason before enabling it."
+  }
+}

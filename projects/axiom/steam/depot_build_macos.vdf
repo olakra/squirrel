@@ -1,0 +1,10 @@
+"DepotBuildConfig"
+{
+	"DepotID" "${STEAM_DEPOT_MACOS_ID}"
+	"FileMapping"
+	{
+		"LocalPath" "macos/*"
+		"DepotPath" "."
+		"recursive" "1"
+	}
+}

@@ -1,0 +1,7 @@
+# Desktop build output. Never commit these.
+node_modules/
+dist/
+target/
+# Generated copy of ../web, made by scripts/prepare-web.mjs.
+app-web/
+*.log
