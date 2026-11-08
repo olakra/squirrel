@@ -7,6 +7,7 @@ each project's `docs/ARCHITECTURE.md`.
 |---|---|
 | [code-review.md](code-review.md) | What a reviewer checks, in order, and how to comment. |
 | [quality-gates.md](quality-gates.md) | Every CI gate: what it measures, its threshold, and how to fix a failure. |
+| [claude-code-setup.md](claude-code-setup.md) | Install Claude Code on Windows and macOS, and keep skills and plugins in sync. |
 | [engineering-principles.md](engineering-principles.md) | SOLID, domain-driven design, TDD, and the design patterns this codebase uses. |
 | [adr/](adr/) | Architecture Decision Records. Start from [adr/0000-template.md](adr/0000-template.md). |
 | [change-management.md](change-management.md) | The change lifecycle, risk classes, and the single-owner review exception. |
