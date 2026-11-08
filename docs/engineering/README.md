@@ -15,11 +15,16 @@ each project's `docs/ARCHITECTURE.md`.
 | [release-process.md](release-process.md) | Release runbook, hotfix flow, rollback, and cadence. |
 | [tag-protection.md](tag-protection.md) | Why release tags are immutable, the tag ruleset, and immutable releases. |
 | [branch-protection.md](branch-protection.md) | Branch rules, required checks, and the `production` environment, as UI steps and as a script. |
+| [performance-budget.md](performance-budget.md) | The 60 Hz tick budget, the stress scenario, the sandbox baseline, and what the owner must measure on target hardware. |
+| [save-format-policy.md](save-format-policy.md) | Save header, version rules, loader rules, and migrations. Policy only; no save code exists yet. |
+| [v1-scope.md](v1-scope.md) | Draft v1.0.0 scope: player-visible capabilities and exit criteria. Owner approval required. |
 
 Accepted decisions:
 
 - [ADR 0001: Monorepo layout](adr/0001-monorepo-layout.md)
 - [ADR 0003: Monorepo orchestration (moon)](adr/0003-monorepo-orchestration.md)
+- [ADR 0004: Benchmark regression rule as a review rule](adr/0004-benchmark-regression-gate.md)
+- [ADR 0005: Keep FNV-1a as the state hash for 0.1.1](adr/0005-state-hash.md)
 
 Proposed decisions:
 

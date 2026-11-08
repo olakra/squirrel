@@ -51,7 +51,9 @@ performance to hold at 60 ticks per second. Benchmarks are tracked as trends, no
   runners vary too much from run to run to fail a build on a timing difference.
 - **Regression rule.** A change that makes the stress scenario more than **10% slower** fails
   review until the PR explains why the cost is worth it. The reviewer enforces this rule. No
-  automated comparison exists yet.
+  automated comparison exists yet. The decision and the review steps are in
+  [ADR 0004](adr/0004-benchmark-regression-gate.md). The baseline is in
+  [performance-budget.md](performance-budget.md).
 - **Hot-path changes** include a before and after benchmark result in the PR description. Run them
   on the same machine.
 - A future step is a benchmark store keyed by commit. Then a regression can fail CI automatically.
