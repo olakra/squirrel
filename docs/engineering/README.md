@@ -19,6 +19,11 @@ each project's `docs/ARCHITECTURE.md`.
 Accepted decisions:
 
 - [ADR 0001: Monorepo layout](adr/0001-monorepo-layout.md)
+- [ADR 0003: Monorepo orchestration (moon)](adr/0003-monorepo-orchestration.md)
+
+Reference:
+
+- [build-graph.md](build-graph.md): project dependency graph and task pipeline.
 
 Related:
 
