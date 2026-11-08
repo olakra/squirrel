@@ -24,7 +24,7 @@ config changes), **Added** (new tool or check), **Deferred** (decided, not built
 | Test runner upgrade | cargo-nextest | Deferred | Adopt when a test can hang or the suite takes around a minute. |
 | Benchmarks | std-only harness | Kept | It prints state hashes, so it also checks determinism. |
 | Benchmark upgrade | Criterion | Deferred | Criterion needs stored baselines, which is the decision in roadmap #4. |
-| State digest | BLAKE3 over canonical bytes at checkpoints | Changed | The studio spec names BLAKE3, and FNV-1a was a stopgap for roadmap #9. |
+| State digest | BLAKE3 over canonical bytes at checkpoints | Deferred | The studio spec names BLAKE3, and FNV-1a was a stopgap for roadmap #9. |
 | Coverage | cargo-llvm-cov, gates at 90, 90 and 85 percent | Kept | The gate matches requirement R7, but it has not run in CI yet (roadmap #5). |
 | Supply chain | cargo-deny; cargo-audit not added | Kept | cargo-deny already checks the RustSec advisory database. |
 | Build cache | Swatinem rust-cache; sccache deferred | Kept | sccache pays off only with large dependency trees, and this crate has none. |

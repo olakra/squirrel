@@ -7,9 +7,9 @@
 | Ring-buffer belt lane + chain (O(1) rear insert and front pop) | Implemented, tested (incl. differential test) |
 | Splitter (deterministic round-robin, blocked-output routing) | Implemented, tested |
 | Inserter state machine with source reservation | Implemented, tested |
-| Chunk grid (32x32, sleep/wake, sorted iteration) | Implemented, tested; not yet integrated into `World` (issue #1) |
+| Chunk grid (32x32, sleep/wake, sorted iteration) | Implemented, tested; integrated into `World`: only active chunks tick, in sorted order (issue #1) |
 | Fixed-timestep world + FNV-1a state hash | Implemented, tested (1,000-tick determinism regression) |
-| Splitters and inserters wired into `World` | Not started (issue #11) |
+| Splitters and inserters wired into `World` | Implemented, tested: fixed four-phase tick order (inserter pick, chain advance, splitter route, inserter drop), hashed into state (issue #11) |
 | WASM C-ABI exports (`src/wasm.rs`) + build script | Implemented; `wasm32` build verified in CI only |
 | Web Worker simulation + SharedArrayBuffer | Harness and gamepad input only; sim not yet in worker (issue #14) |
 | Rendering (instanced sprites, WebGL2) | Placeholder canvas only (issue #13) |

@@ -21,9 +21,9 @@ The tick budget here is derived from 60 Hz.
 ## Headroom
 
 The team wants the stress tick to stay under half the budget on target hardware, which is
-8,333,333 ns. [ADR 0002](adr/0002-tech-stack.md) uses this point as the trigger for the threading
-upgrade: it says to adopt SharedArrayBuffer and worker pools only if a measured stress tick on the
-Deck passes half the budget. The owner confirms this target.
+8,333,333 ns. [ADR 0002](adr/0002-tech-stack.md) names the same point as a trigger for the threading
+upgrade: a stress tick above half the budget on the Steam Deck. ADR 0002 calls that threshold a
+proposal, not a measurement. The owner confirms this target.
 
 ## Stress scenario
 

@@ -35,7 +35,7 @@ question" need the owner's answer before approval. Each in-scope item links to a
 
 All of these must hold for v1.0.0.
 
-**Engine and performance**
+### Engine and performance
 
 - E1. 60 UPS is sustained on target hardware with the stress scenario in
   [performance-budget.md](performance-budget.md). The owner chooses the item count (open question 1).
@@ -44,13 +44,13 @@ All of these must hold for v1.0.0.
 - E4. Load to play takes 3.5 s or less on broadband. The WASM build is 8 MB or less compressed (studio
   spec). Not measured yet.
 
-**Determinism and saves**
+### Determinism and saves
 
 - D1. A 50,000-tick run gives an identical state hash on Ubuntu, macOS and Windows (studio spec). The
   hash algorithm must be decided first (open question 2).
 - D2. The save round trip and the golden-file tests in [save-format-policy.md](save-format-policy.md) pass.
 
-**Platform**
+### Platform
 
 - P1. Zero-install play works in Chrome, Edge, Safari and Firefox (studio spec). Safari and Firefox
   have not been tested from this environment (ADR 0002).
@@ -59,7 +59,7 @@ All of these must hold for v1.0.0.
 - P3. The macOS build is notarized and the Windows build is signed (issue #18).
 - P4. Electron is on a supported major version (issue #20).
 
-**Quality and release**
+### Quality and release
 
 - Q1. The quality gates pass on `main`, including coverage (issue #5).
 - Q2. Every item in [versioning.md](versioning.md), "Moving to 1.0.0", holds, and the owner writes the
