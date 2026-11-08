@@ -11,12 +11,12 @@ Quality gates are in [engineering/quality-gates.md](engineering/quality-gates.md
 
 | Milestone | Goal | Status |
 |---|---|---|
-| [v0.1.0](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core | In progress |
+| [v0.1.1](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core | In progress |
 | [v0.2.0](https://github.com/olakra/squirrel/milestone/2) | Playable vertical slice: rendering and inserters wired to the world | Not started |
 | [v0.3.0](https://github.com/olakra/squirrel/milestone/3) | Steam Early Access build: desktop shell, Steam depots, Deck-verified checklist items | Not started |
 | [v1.0.0](https://github.com/olakra/squirrel/milestone/4) | Full release | Scope not defined |
 
-## v0.1.0: deterministic simulation core
+## v0.1.1: deterministic simulation core
 
 Done in code: belt lane and chain, fixed-timestep world, state hash, 1,000-tick determinism test.
 
@@ -63,7 +63,7 @@ Done in code: belt lane and chain, fixed-timestep world, state hash, 1,000-tick 
 
 ```mermaid
 flowchart LR
-    M1["v0.1.0<br/>simulation core"] --> M2["v0.2.0<br/>vertical slice"]
+    M1["v0.1.1<br/>simulation core"] --> M2["v0.2.0<br/>vertical slice"]
     M2 --> M3["v0.3.0<br/>Steam Early Access"]
     M3 --> M4["v1.0.0<br/>full release"]
 

@@ -1,4 +1,4 @@
-# Release pipeline. Runs when a tag such as v0.1.0 is pushed.
+# Release pipeline. Runs when a tag such as v0.1.1 is pushed.
 #
 # Order: verify (tag rules) -> ci (make ci, the same gates as ci.yml) -> build (wasm and
 # checksums) -> release (waits for approval in the "production" environment, then publishes

@@ -6,7 +6,7 @@ counts as a breaking change for this project and how a version becomes a tag.
 ## Source of truth
 
 - The version is `version` in `projects/axiom/Cargo.toml`. Nothing else sets it.
-- A release tag is `v` followed by that version, for example `v0.1.0`. The tag must equal the
+- A release tag is `v` followed by that version, for example `v0.1.1`. The tag must equal the
   Cargo version. `release.yml` enforces this in job `verify`, and `make release-check` checks it
   locally.
 - Tags live in the repository, so `vX.Y.Z` names the whole repository. When a second project

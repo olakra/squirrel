@@ -9,9 +9,9 @@
 # This workflow does not touch ci.yml or release.yml.
 name: Steam build
 
+# ON HOLD: Steam integration is paused until the owner confirms. Tag pushes do not
+# trigger this workflow. Re-enable with: tags: ["v*"]
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
 
 # Read-only token by default. Only the jobs below need anything else, and they need nothing extra.
