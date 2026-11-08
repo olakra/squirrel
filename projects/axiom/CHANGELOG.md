@@ -8,7 +8,18 @@ All notable changes to the axiom crate are recorded here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Simulation items are drawn each frame from a WASM snapshot (`axiom_snapshot_items`,
+  `axiom_item_id`, `axiom_item_lane`, `axiom_item_offset`). The renderer draws them as
+  instanced quads.
+- `F` feeds one item into the head of the chain.
+- Pure mapping from a snapshot to renderer instances (`web/items.js`), with tests.
+
+### Changed
+
+- Coverage gate tests call the FFI exports directly, so the export layer counts toward the
+  function threshold.
 
 ## [0.1.1] - 2026-11-08
 

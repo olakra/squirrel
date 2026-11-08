@@ -13,7 +13,7 @@ cargo bench --bench belt_throughput -- --quick  # ~10x smaller smoke run for CI
 Run from the crate root. Each run prints plain text lines, and nothing else
 goes to stdout:
 
-```
+```text
 bench <scenario>.<metric> <value> <unit>
 ```
 
@@ -27,7 +27,7 @@ Each scenario prints three metrics:
 
 Example:
 
-```
+```text
 bench rear_push.ns_per_tick 357.3 ns/tick
 bench rear_push.items_per_sec 2799069 items/s
 bench rear_push.state_hash 0x3a569a910ca391a3 fnv1a64
@@ -84,6 +84,6 @@ times, compare medians, and only trust differences larger than the noise.
 
 ## CI
 
-Use `--quick` for smoke runs. Parse lines with `^bench ` and split on spaces.
+Use `--quick` for smoke runs. Parse lines that start with `bench` and split on spaces.
 The name is `<scenario>.<metric>`, the value is field 3, and the unit is
 field 4.
