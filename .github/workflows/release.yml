@@ -125,7 +125,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           bash scripts/ci/extract-changelog.sh "$version" "$AXIOM_DIR/CHANGELOG.md" > release-notes.md
       - name: attest build provenance
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*.wasm
       - name: create the GitHub release
