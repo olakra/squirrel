@@ -4,8 +4,8 @@
 //
 // Input flow: input.js turns gamepad and key state into intents. This file
 // applies UI intents (cursor, selection markers, hints) locally and forwards
-// game intents to the worker as { kind: "intent", intent }. The worker does
-// not handle "intent" yet and ignores it, so this wiring is safe to ship now.
+// game intents to the worker as { kind: "intent", intent }. The worker runs
+// pause, resume and feed; it ignores the UI intents and the confirm/cancel markers.
 
 import { createGamepadInput, keyToIntent, HINTS } from "./input.js";
 
@@ -52,6 +52,10 @@ window.addEventListener("resize", () => {
 worker.onmessage = (e) => {
   if (e.data.kind === "log") log(e.data.msg);
 };
+worker.onerror = (e) => log(`worker error: ${e.message || "unknown"}`);
+
+// Game intents go to the worker, which owns the simulation. Keep messages small and plain.
+const sendIntent = (intent) => worker.postMessage({ kind: "intent", intent });
 
 // Report a missing WASM module in its own line, so the boot message stays readable.
 // Without axiom.wasm the page still runs; the simulation simply is not loaded.
@@ -136,11 +140,11 @@ function apply(intent, source) {
       break;
     case "confirm":
       addMarker();
-      worker.postMessage({ kind: "intent", intent: { type: "confirm", x: cursor.x, y: cursor.y } });
+      sendIntent({ type: "confirm", x: cursor.x, y: cursor.y });
       break;
     case "cancel":
       removeMarker();
-      worker.postMessage({ kind: "intent", intent: { type: "cancel" } });
+      sendIntent({ type: "cancel" });
       break;
     case "toggleHints":
       hintsEl.hidden = !hintsEl.hidden;
@@ -152,7 +156,21 @@ function apply(intent, source) {
 
 // ---- Keyboard ----
 
+// Simulation keys. P pauses or resumes the worker's tick loop. F feeds one item to the head of the chain.
+// These are not on the hint bar yet.
+let paused = false;
 window.addEventListener("keydown", (e) => {
+  if (!e.repeat && e.code === "KeyP") {
+    e.preventDefault();
+    paused = !paused;
+    sendIntent({ type: paused ? "pause" : "resume" });
+    return;
+  }
+  if (!e.repeat && e.code === "KeyF") {
+    e.preventDefault();
+    sendIntent({ type: "feed", item: 1 });
+    return;
+  }
   const intent = keyToIntent(e.code);
   if (!intent) return;
   if (e.repeat && intent.type !== "move") return; // held keys repeat moves only
