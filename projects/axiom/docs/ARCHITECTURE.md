@@ -1,17 +1,20 @@
-# Project Axiom: Architecture (Milestone 0)
+# Project Axiom: Architecture (Milestone 1)
 
 ## Status
 
 | Area | State |
 |---|---|
-| Interval-queue belt lane + chain | Implemented, tested |
-| Fixed-timestep world + state hash | Implemented, tested |
-| 1,000-tick determinism regression | Implemented (hash parity across runs) |
-| Splitters, mergers, inserters | Not started |
-| WASM bindings (`wasm-bindgen`) | Not started (needs registry access) |
-| Web Worker simulation + SharedArrayBuffer | Harness only, no WASM yet |
-| Rendering (instanced sprites, WebGL2) | Placeholder canvas only |
-| Criterion benchmarks | Not started (needs registry access) |
+| Ring-buffer belt lane + chain (O(1) rear insert and front pop) | Implemented, tested (incl. differential test) |
+| Splitter (deterministic round-robin, blocked-output routing) | Implemented, tested |
+| Inserter state machine with source reservation | Implemented, tested |
+| Chunk grid (32x32, sleep/wake, sorted iteration) | Implemented, tested; not yet integrated into `World` (issue #1) |
+| Fixed-timestep world + FNV-1a state hash | Implemented, tested (1,000-tick determinism regression) |
+| Splitters and inserters wired into `World` | Not started (issue #11) |
+| WASM C-ABI exports (`src/wasm.rs`) + build script | Implemented; `wasm32` build verified in CI only |
+| Web Worker simulation + SharedArrayBuffer | Harness and gamepad input only; sim not yet in worker (issue #14) |
+| Rendering (instanced sprites, WebGL2) | Placeholder canvas only (issue #13) |
+| Benchmarks (std-only `belt_throughput`) | Implemented; regression gate is a review rule (issue #4) |
+| Desktop shell (Electron) and Steam packaging | Implemented; not yet built on Steam (issues #15–#18) |
 
 ## Constraints in force
 
