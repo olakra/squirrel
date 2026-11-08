@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
@@ -83,7 +83,7 @@ jobs:
             depot: macos
             builder: "--mac --universal"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Bun installs and runs the scripts. Electron's own install script runs on Node.js, which
       # GitHub-hosted runners already include. No setup-node step is needed for that.
       - uses: oven-sh/setup-bun@v2
@@ -172,7 +172,7 @@ jobs:
       group: steam-upload
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: download depot archives
         uses: actions/download-artifact@v8
         with:
