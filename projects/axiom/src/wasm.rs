@@ -133,8 +133,7 @@ pub extern "C" fn axiom_state_hash_hi() -> u32 {
 /// Items that have left the final lane of the chain, saturated to `u32`.
 #[no_mangle]
 pub extern "C" fn axiom_sunk() -> u32 {
-    with_world(|w| w.chains().first().map_or(0, |c| c.sunk()))
-        .map_or(0, saturate_u32)
+    with_world(|w| w.chains().first().map_or(0, |c| c.sunk())).map_or(0, saturate_u32)
 }
 
 /// Fixed steps taken since `axiom_init`, saturated to `u32`.
@@ -164,7 +163,13 @@ mod tests {
 
     #[test]
     fn split_u64_round_trips() {
-        for v in [0u64, 1, 0xcbf2_9ce4_8422_2325, 0x0123_4567_89ab_cdef, u64::MAX] {
+        for v in [
+            0u64,
+            1,
+            0xcbf2_9ce4_8422_2325,
+            0x0123_4567_89ab_cdef,
+            u64::MAX,
+        ] {
             let (lo, hi) = split_u64(v);
             assert_eq!((u64::from(hi) << 32) | u64::from(lo), v);
         }
@@ -189,9 +194,15 @@ mod tests {
     #[test]
     fn layout_validation_rejects_degenerate_input() {
         assert!(!is_valid_layout(0, 40, 2), "zero lanes");
-        assert!(!is_valid_layout(1, ITEM_SPACING, 2), "length must exceed spacing");
+        assert!(
+            !is_valid_layout(1, ITEM_SPACING, 2),
+            "length must exceed spacing"
+        );
         assert!(!is_valid_layout(1, 40, 0), "zero speed");
-        assert!(is_valid_layout(1, ITEM_SPACING + 1, 1), "smallest valid lane");
+        assert!(
+            is_valid_layout(1, ITEM_SPACING + 1, 1),
+            "smallest valid lane"
+        );
     }
 
     #[test]
