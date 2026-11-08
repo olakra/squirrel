@@ -35,7 +35,8 @@ Monorepo for Oscar's projects and their shared engineering documentation.
 
 ## Quality bar
 
-- Formatting, clippy with warnings denied, tests on Linux, macOS, and Windows, a coverage gate, a benchmark smoke run, and dependency audit run on every pull request.
+- Formatting, clippy with warnings denied, tests on Linux, macOS, and Windows,
+  a coverage gate, a benchmark smoke run, and dependency audit run on every pull request.
 - Changes are merged only through reviewed pull requests with linear history.
 - Releases are tagged `vX.Y.Z`, built in CI, and attested with build provenance. See [docs/engineering/release-process.md](docs/engineering/release-process.md).
 

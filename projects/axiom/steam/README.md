@@ -48,8 +48,8 @@ These steps happen in Steamworks and GitHub. Nothing in this repository can do t
 
 The Steam Web API key is not needed for uploads, so skip it for now.
 
-9. When the login token expires, or the upload account's password changes, repeat step 7 and
-   replace `STEAM_CONFIG_VDF`.
+When the login token expires, or the upload account's password changes, repeat step 7 and
+replace `STEAM_CONFIG_VDF`.
 
 ## What the workflow does
 
