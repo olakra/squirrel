@@ -21,6 +21,10 @@ Accepted decisions:
 - [ADR 0001: Monorepo layout](adr/0001-monorepo-layout.md)
 - [ADR 0003: Monorepo orchestration (moon)](adr/0003-monorepo-orchestration.md)
 
+Proposed decisions:
+
+- [ADR 0002: Tech stack, layer by layer](adr/0002-tech-stack.md)
+
 Reference:
 
 - [build-graph.md](build-graph.md): project dependency graph and task pipeline.
