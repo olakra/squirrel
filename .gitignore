@@ -23,3 +23,11 @@ go.work.sum
 
 # env file
 .env
+
+# Rust
+target/
+**/*.rs.bk
+
+# Node / web tooling
+node_modules/
+dist/

@@ -1,0 +1,8 @@
+# Native builds (cargo test, cargo bench) use the default target.
+#
+# Browser builds need atomics + shared memory, which requires nightly
+# build-std. Use scripts/build-wasm.sh rather than setting these globally,
+# so native test builds are not affected.
+#
+#   RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+simd128 -C link-arg=--shared-memory -C link-arg=--max-memory=4294967296"
+#   cargo +nightly build --target wasm32-unknown-unknown -Z build-std=std,panic_abort

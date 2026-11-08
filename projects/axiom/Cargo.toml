@@ -1,0 +1,24 @@
+[package]
+name = "axiom"
+version = "0.1.0"
+edition = "2021"
+description = "Project Axiom: deterministic 2D factory simulation core (Rust + WASM)"
+license = "UNLICENSED"
+
+# Deliberately dependency-free for the first deliverable so the simulation
+# core builds and tests offline. Planned additions (add when the registry is
+# reachable): wasm-bindgen, web-sys, js-sys, bytemuck, parking_lot, criterion.
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.bench]
+inherits = "release"
+debug = false
