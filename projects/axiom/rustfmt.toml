@@ -1,0 +1,6 @@
+# Formatting policy for the axiom crate. CI enforces it with
+# `cargo fmt --all -- --check` (see .github/workflows/ci.yml, job "fmt").
+# Default small-heuristics are kept on purpose: the existing code is formatted
+# with them, and "Max" would reflow most of it.
+edition = "2021"
+max_width = 100

@@ -1,0 +1,29 @@
+# cargo-deny policy for the axiom crate. Run from projects/axiom with:
+#   cargo deny check
+# CI runs the same command in the "supply-chain" job.
+
+[graph]
+all-features = true
+
+[advisories]
+# Fail on known vulnerabilities (default), yanked crates and unmaintained crates.
+unmaintained = "all"
+yanked = "deny"
+
+[licenses]
+# Permissive licenses only. Add one here deliberately, with a reason in the PR.
+allow = ["MIT", "Apache-2.0", "BSD-3-Clause", "ISC", "Unicode-3.0"]
+confidence-threshold = 0.93
+# Crates marked `publish = false` are private and skip the license check. The axiom
+# crate currently says `license = "UNLICENSED"`. Setting `publish = false` in its
+# Cargo.toml (owned outside this change) is the intended fix.
+private = { ignore = true }
+
+[bans]
+# Duplicate versions of a crate are noise, not a failure. Surface them, do not block.
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -1,0 +1,38 @@
+# Release: when a tag like v0.1.0 is pushed, build the wasm bundle and attach it
+# to a GitHub release for that tag.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  AXIOM_DIR: projects/axiom
+
+jobs:
+  wasm-release:
+    name: build and publish axiom.wasm
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only this job needs write access, to create the release and attach the file.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.AXIOM_DIR }}
+      - name: build wasm
+        working-directory: ${{ env.AXIOM_DIR }}
+        run: bash scripts/build-wasm.sh
+      - name: attach axiom.wasm to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.AXIOM_DIR }}/web/axiom.wasm

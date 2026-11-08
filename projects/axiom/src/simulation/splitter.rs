@@ -153,9 +153,9 @@ mod tests {
         input: &mut BeltLane,
         left: &mut BeltLane,
         right: &mut BeltLane,
-        left_open: bool,
-        right_open: bool,
+        open: (bool, bool),
     ) -> Vec<Option<Side>> {
+        let (left_open, right_open) = open;
         let mut next_id = 0u16;
         let mut routes = Vec::new();
         for _ in 0..TICKS {
@@ -176,7 +176,7 @@ mod tests {
     fn balanced_split_over_n_items_differs_by_at_most_one() {
         let mut s = Splitter::new();
         let (mut input, mut left, mut right) = (lane(), lane(), lane());
-        run(&mut s, &mut input, &mut left, &mut right, true, true);
+        run(&mut s, &mut input, &mut left, &mut right, (true, true));
 
         assert!(input.is_empty(), "every item must leave the input");
         let l = s.sent_to(Side::Left);
@@ -192,7 +192,7 @@ mod tests {
     fn open_outputs_alternate_strictly() {
         let mut s = Splitter::new();
         let (mut input, mut left, mut right) = (lane(), lane(), lane());
-        let sides: Vec<Side> = run(&mut s, &mut input, &mut left, &mut right, true, true)
+        let sides: Vec<Side> = run(&mut s, &mut input, &mut left, &mut right, (true, true))
             .into_iter()
             .flatten()
             .collect();
@@ -212,7 +212,7 @@ mod tests {
         // blocker never clears and the left output refuses all items.
         assert!(left.try_push_rear(ItemId(900)));
 
-        run(&mut s, &mut input, &mut left, &mut right, false, true);
+        run(&mut s, &mut input, &mut left, &mut right, (false, true));
 
         assert_eq!(s.sent_to(Side::Left), 0, "blocked left receives nothing");
         assert_eq!(
@@ -272,8 +272,7 @@ mod tests {
             &mut input,
             &mut left,
             &mut right,
-            true,
-            !block_right,
+            (true, !block_right),
         );
 
         let mut h = Fnv1a::new();

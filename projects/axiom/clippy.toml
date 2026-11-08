@@ -1,0 +1,4 @@
+# Thresholds read by clippy. Warnings are NOT denied by this file: CI passes
+# `-D warnings` on the command line (job "clippy"). See docs/engineering/quality-gates.md.
+cognitive-complexity-threshold = 15
+too-many-arguments-threshold = 5
