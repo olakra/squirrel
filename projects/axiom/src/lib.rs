@@ -8,6 +8,8 @@
 
 pub mod core;
 pub mod simulation;
+#[cfg(any(target_arch = "wasm32", test))]
+pub mod wasm;
 
 pub use crate::core::hash::Fnv1a;
 pub use crate::core::ids::ItemId;

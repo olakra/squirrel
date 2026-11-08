@@ -1,12 +1,15 @@
 //! Interval-queue belt model.
 //!
-//! Items are never separate actors. A lane stores an ascending list of
+//! Items are never separate actors. A lane stores an ascending sequence of
 //! `(item, offset)` pairs. Offsets are discrete distance units along the lane.
 //!
-//! Ordering convention:
-//! - `items[0]` is the rearmost item (smallest offset).
-//! - `items[len - 1]` is the front item (largest offset), the one that
+//! Ordering convention (logical order, as seen through `BeltLane::items`):
+//! - The first item yielded is the rearmost item (smallest offset).
+//! - The last item yielded is the front item (largest offset), the one that
 //!   reaches the end of the lane first.
+//!
+//! Storage is a fixed-capacity ring buffer, so rear insertion and front
+//! removal are both O(1) and no memmove is ever needed.
 //!
 //! Per tick, items advance front to back. Each item moves by `speed`, but
 //! never past `next_item.offset - ITEM_SPACING`. When the front item is at
@@ -18,6 +21,12 @@ use crate::core::ids::ItemId;
 /// Minimum distance between adjacent items, in distance units.
 pub const ITEM_SPACING: u32 = 4;
 
+/// Filler for unused ring slots. Never observed through the public API.
+const EMPTY_SLOT: BeltItem = BeltItem {
+    item: ItemId(0),
+    offset: 0,
+};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BeltItem {
     pub item: ItemId,
@@ -25,9 +34,24 @@ pub struct BeltItem {
     pub offset: u32,
 }
 
+/// A lane backed by a fixed-capacity ring buffer.
+///
+/// Ring invariants:
+/// - `buf.len()` is the capacity. It is set once in `with_capacity` and never
+///   changes, so the tick path never reallocates.
+/// - `len <= buf.len()`. Pushes are refused when the lane is full.
+/// - Logical index 0 is the rear item and sits at physical slot `head`.
+///   Logical index `i` sits at physical slot `(head + i) mod capacity`.
+///   Logical index `len - 1` is the front item.
+/// - Physical slots outside the live range hold stale data and are never read.
+/// - `head < capacity` whenever `capacity > 0`.
 #[derive(Clone, Debug)]
 pub struct BeltLane {
-    items: Vec<BeltItem>,
+    buf: Vec<BeltItem>,
+    /// Physical slot of the rear item. Meaningful only when `len > 0`.
+    head: usize,
+    /// Number of live items.
+    len: usize,
     /// Total lane length in distance units.
     length: u32,
     /// Distance units advanced per tick.
@@ -35,13 +59,19 @@ pub struct BeltLane {
 }
 
 impl BeltLane {
-    /// Creates a lane with capacity reserved up front. Pushing never grows
-    /// the buffer as long as the lane holds at most `capacity` items.
+    /// Creates a lane with a fixed capacity, allocated here and nowhere else.
+    /// A lane holds at most `capacity` items. Pushing into a full lane returns
+    /// `false` and leaves the lane unchanged.
     pub fn with_capacity(length: u32, speed: u32, capacity: usize) -> Self {
-        assert!(length > ITEM_SPACING, "lane must be longer than ITEM_SPACING");
+        assert!(
+            length > ITEM_SPACING,
+            "lane must be longer than ITEM_SPACING"
+        );
         assert!(speed > 0, "lane speed must be positive");
         Self {
-            items: Vec::with_capacity(capacity),
+            buf: vec![EMPTY_SLOT; capacity],
+            head: 0,
+            len: 0,
             length,
             speed,
         }
@@ -49,12 +79,12 @@ impl BeltLane {
 
     #[inline]
     pub fn len(&self) -> usize {
-        self.items.len()
+        self.len
     }
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
+        self.len == 0
     }
 
     #[inline]
@@ -62,9 +92,27 @@ impl BeltLane {
         self.length
     }
 
+    /// Iterates the live items in logical order, rear to front.
     #[inline]
-    pub fn items(&self) -> &[BeltItem] {
-        &self.items
+    pub fn items(&self) -> impl Iterator<Item = &BeltItem> + '_ {
+        (0..self.len).map(move |i| &self.buf[self.slot(i)])
+    }
+
+    /// Maps a logical index (0 = rear) to a physical slot in `buf`.
+    ///
+    /// Requires `index < self.len`. Since `head < cap` and `index < cap`, the
+    /// sum is below `2 * cap`, so one conditional subtraction wraps it. This
+    /// avoids a division or modulo on every access.
+    #[inline]
+    fn slot(&self, index: usize) -> usize {
+        debug_assert!(index < self.len, "logical index out of range");
+        let cap = self.buf.len();
+        let p = self.head + index;
+        if p >= cap {
+            p - cap
+        } else {
+            p
+        }
     }
 
     /// The position the front item stops at when blocked: the lane end minus
@@ -77,42 +125,49 @@ impl BeltLane {
     /// True if the front item is at the exit and could be handed downstream.
     #[inline]
     pub fn front_ready(&self) -> bool {
-        self.items
-            .last()
-            .is_some_and(|it| it.offset >= self.front_cap())
+        self.len > 0 && self.buf[self.slot(self.len - 1)].offset >= self.front_cap()
     }
 
-    /// Whether an item can enter at the rear (offset 0) without overlapping.
+    /// Whether an item can enter at the rear (offset 0). False when the lane
+    /// is full or when the rear item is still too close to offset 0.
     #[inline]
     pub fn can_accept_rear(&self) -> bool {
-        self.items.first().is_none_or(|it| it.offset >= ITEM_SPACING)
+        if self.len == self.buf.len() {
+            return false;
+        }
+        self.len == 0 || self.buf[self.head].offset >= ITEM_SPACING
     }
 
-    /// Inserts an item at the rear. Returns `false` if there is no room.
-    ///
-    /// The rear is index 0, so this is a memmove over the live items. For
-    /// lanes near capacity this is the hot spot to replace with a true ring
-    /// buffer, which is a planned follow-up.
+    /// Inserts an item at the rear. Returns `false` if there is no room, or if
+    /// the lane is at capacity. O(1), no allocation.
     pub fn try_push_rear(&mut self, item: ItemId) -> bool {
         if !self.can_accept_rear() {
             return false;
         }
-        self.items.insert(0, BeltItem { item, offset: 0 });
+        // Rear is the slot just before the current head, wrapping at zero.
+        self.head = if self.head == 0 {
+            self.buf.len() - 1
+        } else {
+            self.head - 1
+        };
+        self.buf[self.head] = BeltItem { item, offset: 0 };
+        self.len += 1;
         true
     }
 
-    /// Removes and returns the front item if it is ready to exit.
+    /// Removes and returns the front item if it is ready to exit. O(1).
     pub fn pop_front_if_ready(&mut self) -> Option<ItemId> {
-        if self.front_ready() {
-            self.items.pop().map(|it| it.item)
-        } else {
-            None
+        if !self.front_ready() {
+            return None;
         }
+        let it = self.buf[self.slot(self.len - 1)];
+        self.len -= 1;
+        Some(it.item)
     }
 
     /// Advances all items one tick, front to back, with spacing compression.
     pub fn advance(&mut self) {
-        let n = self.items.len();
+        let n = self.len;
         if n == 0 {
             return;
         }
@@ -121,30 +176,32 @@ impl BeltLane {
 
         // Front item: capped at the end of the lane.
         {
-            let it = &mut self.items[n - 1];
+            let s = self.slot(n - 1);
+            let it = &mut self.buf[s];
             let target = it.offset.saturating_add(speed).min(front_cap);
             // Never move backward, even if the cap is already behind us.
             it.offset = it.offset.max(target);
         }
 
         // Each following item: capped one spacing behind the item ahead.
-        // Iterating in reverse uses already-updated offsets, which
+        // Iterating from the front uses already-updated offsets, which
         // produces the compression wave.
         for i in (0..n - 1).rev() {
-            let ahead = self.items[i + 1].offset;
+            let ahead = self.buf[self.slot(i + 1)].offset;
+            let s = self.slot(i);
+            let it = &mut self.buf[s];
             let cap = ahead.saturating_sub(ITEM_SPACING);
-            let it = &mut self.items[i];
             let target = it.offset.saturating_add(speed).min(cap);
             it.offset = it.offset.max(target);
         }
     }
 
-    /// Hashes the lane state into `h` in a fixed order.
+    /// Hashes the lane state into `h` in logical order, rear to front.
     pub fn hash_into(&self, h: &mut crate::core::hash::Fnv1a) {
         h.write_u32(self.length);
         h.write_u32(self.speed);
-        h.write_u32(self.items.len() as u32);
-        for it in &self.items {
+        h.write_u32(self.len as u32);
+        for it in self.items() {
             h.write_u16(it.item.0);
             h.write_u32(it.offset);
         }
@@ -165,7 +222,11 @@ pub struct BeltChain {
 
 impl BeltChain {
     pub fn new(lanes: Vec<BeltLane>) -> Self {
-        Self { lanes, sunk: 0, sink_closed: false }
+        Self {
+            lanes,
+            sunk: 0,
+            sink_closed: false,
+        }
     }
 
     /// Opens or closes the final exit. A closed sink models a consumer that
@@ -204,7 +265,8 @@ impl BeltChain {
                 if i + 1 < n {
                     // Transfer only if the next lane's rear has room.
                     if self.lanes[i + 1].can_accept_rear() {
-                        let item = self.lanes[i].pop_front_if_ready()
+                        let item = self.lanes[i]
+                            .pop_front_if_ready()
                             .expect("front_ready was true");
                         let ok = self.lanes[i + 1].try_push_rear(item);
                         debug_assert!(ok, "can_accept_rear was true");
@@ -236,11 +298,102 @@ mod tests {
         BeltLane::with_capacity(length, speed, 64)
     }
 
+    /// Deterministic LCG for test sequences. No external crate.
+    struct Lcg(u64);
+
+    impl Lcg {
+        fn next_u32(&mut self) -> u32 {
+            self.0 = self
+                .0
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (self.0 >> 33) as u32
+        }
+    }
+
+    /// Reference lane: the original Vec-based model, with the same capacity
+    /// rule as the ring. Kept deliberately naive so it is easy to trust.
+    struct RefLane {
+        items: Vec<BeltItem>,
+        cap: usize,
+        length: u32,
+        speed: u32,
+    }
+
+    impl RefLane {
+        fn new(length: u32, speed: u32, cap: usize) -> Self {
+            Self {
+                items: Vec::new(),
+                cap,
+                length,
+                speed,
+            }
+        }
+
+        fn front_ready(&self) -> bool {
+            self.items
+                .last()
+                .is_some_and(|it| it.offset >= self.length - ITEM_SPACING)
+        }
+
+        fn can_accept_rear(&self) -> bool {
+            self.items.len() < self.cap
+                && self
+                    .items
+                    .first()
+                    .is_none_or(|it| it.offset >= ITEM_SPACING)
+        }
+
+        fn try_push_rear(&mut self, item: ItemId) -> bool {
+            if !self.can_accept_rear() {
+                return false;
+            }
+            self.items.insert(0, BeltItem { item, offset: 0 });
+            true
+        }
+
+        fn pop_front_if_ready(&mut self) -> Option<ItemId> {
+            if self.front_ready() {
+                self.items.pop().map(|it| it.item)
+            } else {
+                None
+            }
+        }
+
+        fn advance(&mut self) {
+            let n = self.items.len();
+            if n == 0 {
+                return;
+            }
+            let front_cap = self.length - ITEM_SPACING;
+            let speed = self.speed;
+            {
+                let it = &mut self.items[n - 1];
+                let target = it.offset.saturating_add(speed).min(front_cap);
+                it.offset = it.offset.max(target);
+            }
+            for i in (0..n - 1).rev() {
+                let ahead = self.items[i + 1].offset;
+                let cap = ahead.saturating_sub(ITEM_SPACING);
+                let it = &mut self.items[i];
+                let target = it.offset.saturating_add(speed).min(cap);
+                it.offset = it.offset.max(target);
+            }
+        }
+    }
+
     #[test]
     fn push_places_item_at_rear_offset_zero() {
         let mut l = lane(100, 1);
         assert!(l.try_push_rear(ItemId(7)));
-        assert_eq!(l.items(), &[BeltItem { item: ItemId(7), offset: 0 }]);
+        let got: Vec<BeltItem> = l.items().copied().collect();
+        assert_eq!(
+            got,
+            vec![BeltItem {
+                item: ItemId(7),
+                offset: 0
+            }]
+        );
     }
 
     #[test]
@@ -266,7 +419,7 @@ mod tests {
         }
         for _ in 0..300 {
             l.advance();
-            let offs: Vec<u32> = l.items().iter().map(|i| i.offset).collect();
+            let offs: Vec<u32> = l.items().map(|i| i.offset).collect();
             for w in offs.windows(2) {
                 assert!(w[1] >= w[0] + ITEM_SPACING, "spacing violated: {offs:?}");
             }
@@ -326,13 +479,19 @@ mod tests {
         assert_eq!(fed, held as u64, "every fed item is still held");
 
         // Blocked state is stable: nothing moves or disappears.
-        let snapshot: Vec<Vec<BeltItem>> =
-            chain.lanes().iter().map(|l| l.items().to_vec()).collect();
+        let snapshot: Vec<Vec<BeltItem>> = chain
+            .lanes()
+            .iter()
+            .map(|l| l.items().copied().collect())
+            .collect();
         for _ in 0..100 {
             chain.tick();
         }
-        let after: Vec<Vec<BeltItem>> =
-            chain.lanes().iter().map(|l| l.items().to_vec()).collect();
+        let after: Vec<Vec<BeltItem>> = chain
+            .lanes()
+            .iter()
+            .map(|l| l.items().copied().collect())
+            .collect();
         assert_eq!(snapshot, after, "blocked chain must be stationary");
 
         // Reopen the sink: the queue drains and totals are conserved.
@@ -341,7 +500,11 @@ mod tests {
             chain.tick();
         }
         let left: usize = chain.lanes().iter().map(|l| l.len()).sum();
-        assert_eq!(fed, chain.sunk() + left as u64, "items conserved after resume");
+        assert_eq!(
+            fed,
+            chain.sunk() + left as u64,
+            "items conserved after resume"
+        );
         assert!(chain.sunk() > 0, "items drain once the sink reopens");
     }
 
@@ -360,5 +523,105 @@ mod tests {
         let mut hb2 = Fnv1a::new();
         b.hash_into(&mut hb2);
         assert_eq!(ha.finish(), hb2.finish());
+    }
+
+    #[test]
+    fn differential_ring_matches_vec_reference_over_10k_steps() {
+        // Capacity 6 on a 60-unit lane (physical max would be 15) so the
+        // full-lane rejection path is exercised as well as the spacing path.
+        const LENGTH: u32 = 60;
+        const SPEED: u32 = 3;
+        const CAP: usize = 6;
+        let mut ring = BeltLane::with_capacity(LENGTH, SPEED, CAP);
+        let mut reference = RefLane::new(LENGTH, SPEED, CAP);
+        let mut rng = Lcg(0x5EED_CAFE);
+
+        for step in 0..10_000u32 {
+            match rng.next_u32() % 8 {
+                0..=2 => {
+                    let id = ItemId((rng.next_u32() % 1000) as u16);
+                    assert_eq!(
+                        ring.try_push_rear(id),
+                        reference.try_push_rear(id),
+                        "push result diverged at step {step}"
+                    );
+                }
+                3..=4 => {
+                    assert_eq!(
+                        ring.pop_front_if_ready(),
+                        reference.pop_front_if_ready(),
+                        "pop result diverged at step {step}"
+                    );
+                }
+                _ => {
+                    ring.advance();
+                    reference.advance();
+                }
+            }
+
+            let got: Vec<BeltItem> = ring.items().copied().collect();
+            assert_eq!(got, reference.items, "item list diverged at step {step}");
+            assert_eq!(ring.len(), reference.items.len(), "len at step {step}");
+            assert_eq!(
+                ring.front_ready(),
+                reference.front_ready(),
+                "front_ready at step {step}"
+            );
+            assert_eq!(
+                ring.can_accept_rear(),
+                reference.can_accept_rear(),
+                "can_accept_rear at step {step}"
+            );
+        }
+    }
+
+    #[test]
+    fn wraparound_keeps_fifo_order_across_many_wraps() {
+        // Three physical slots, so 300 items wrap the ring about 100 times.
+        let mut l = BeltLane::with_capacity(20, 4, 3);
+        let mut expected: std::collections::VecDeque<u16> = Default::default();
+        let mut next_id = 0u16;
+        let mut popped = 0u32;
+
+        for _ in 0..20_000 {
+            if next_id < 300 && l.try_push_rear(ItemId(next_id)) {
+                expected.push_back(next_id);
+                next_id += 1;
+            }
+            l.advance();
+            if let Some(id) = l.pop_front_if_ready() {
+                assert_eq!(Some(id.0), expected.pop_front(), "FIFO order broken");
+                popped += 1;
+            }
+            // Rear to front is newest to oldest.
+            let got: Vec<u16> = l.items().map(|i| i.item.0).collect();
+            let want: Vec<u16> = expected.iter().rev().copied().collect();
+            assert_eq!(got, want, "ring contents wrong after wrap");
+        }
+        assert_eq!(popped, 300, "every item must travel through the ring");
+    }
+
+    #[test]
+    fn push_beyond_capacity_returns_false_without_panicking() {
+        let mut l = BeltLane::with_capacity(100, 1, 3);
+        for id in 0..3u16 {
+            while !l.try_push_rear(ItemId(id)) {
+                l.advance();
+            }
+        }
+        assert_eq!(l.len(), 3);
+        // Give the rear plenty of room so only capacity can refuse the push.
+        for _ in 0..50 {
+            l.advance();
+        }
+        assert!(!l.can_accept_rear(), "full lane must refuse rear entry");
+        for _ in 0..10 {
+            assert!(!l.try_push_rear(ItemId(9)));
+        }
+        assert_eq!(l.len(), 3, "refused pushes must not change the lane");
+
+        let mut zero = BeltLane::with_capacity(100, 1, 0);
+        assert!(!zero.try_push_rear(ItemId(1)));
+        assert!(zero.is_empty());
     }
 }
