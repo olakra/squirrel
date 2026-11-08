@@ -3,7 +3,7 @@
 [![CI](https://github.com/olakra/squirrel/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/olakra/squirrel/actions/workflows/ci.yml)
 [![Pages](https://github.com/olakra/squirrel/actions/workflows/pages.yml/badge.svg?branch=main)](https://github.com/olakra/squirrel/actions/workflows/pages.yml)
 [![Release](https://img.shields.io/github/v/release/olakra/squirrel?include_prereleases&sort=semver)](https://github.com/olakra/squirrel/releases)
-[![License](https://img.shields.io/github/license/olakra/squirrel)](LICENSE)
+![License](https://img.shields.io/badge/license-proprietary-red)
 ![Rust](https://img.shields.io/badge/rust-stable-orange?logo=rust)
 ![Bun](https://img.shields.io/badge/bun-1.4.4-black?logo=bun)
 ![Conventional Commits](https://img.shields.io/badge/commits-conventional-fe5196?logo=conventionalcommits&logoColor=white)
@@ -41,4 +41,4 @@ Monorepo for Oscar's projects and their shared engineering documentation.
 
 ## License
 
-See [LICENSE](LICENSE).
+Proprietary. All rights reserved. See [LICENSE](LICENSE).
