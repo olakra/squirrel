@@ -17,7 +17,7 @@ type says what kind of change the commit makes. The changelog and the version bu
 - **scope**: optional. The area that changed, in lowercase: `axiom`, `sim`, `wasm`, `ci`, `docs`,
   `release`. It may contain `.`, `_`, `/`, or `-`.
 - **!**: optional. Marks a breaking change. See the footer rule below.
-- **summary**: imperative mood ("add", not "added"). Starts after the colon and space that follow the type. No full stop at the end.
+- **summary**: imperative mood ("add", not "added"). Follows the colon and space after the type. No full stop at the end.
 - The whole subject line is 72 characters or fewer.
 
 ### Types
