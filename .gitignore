@@ -31,3 +31,7 @@ target/
 # Node / web tooling
 node_modules/
 dist/
+
+# Build output and local CI logs
+dist/
+projects/axiom/bench-smoke.log

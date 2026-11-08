@@ -35,20 +35,31 @@ Run `make ci` before you push. A green local run should mean a green CI run.
 
 Other targets: `make fmt` (formats code), `make test`, `make cov`, `make bench`, `make wasm`.
 
+Governance targets, which need no network: `make scripts-test` (runs every script self-test),
+`make commit-lint` and `make changelog-check` (compare against `origin/main`), and
+`make release-check` (checks the release tag rules against `Cargo.toml`, and tags nothing).
+
 ## Branches and pull requests
 
 - `main` is protected. Nobody pushes to it directly. Every change goes through a pull
-  request, and the CI checks must pass before merge.
-- Branch from `main`. Use a short name that says what changes, such as
-  `feat/inserter-state-machine` or `fix/lane-compression`.
+  request, and every required check must pass before merge. Merges are squash only.
+- Branch from `main`. Use `feature/<name>` for new behaviour, `fix/<name>` for a bug fix, and
+  `chore/<name>` for docs, pipeline, or maintenance work. For example,
+  `feature/inserter-state-machine` or `fix/lane-compression`.
 - Keep a pull request under about 400 changed lines. If it is bigger, split it.
-- Fill in the pull request template. A CODEOWNERS reviewer approves each change.
+- Fill in the pull request template: change type, risk class, rollback plan, determinism impact,
+  changelog entry or `no-changelog` reason, and test evidence.
+- A change to `projects/axiom/src` or `projects/axiom/Cargo.toml` needs an entry in
+  `projects/axiom/CHANGELOG.md` under `[Unreleased]`, or the `no-changelog` label with a reason.
 - Review standards are in [docs/engineering/code-review.md](docs/engineering/code-review.md).
   Gate details are in [docs/engineering/quality-gates.md](docs/engineering/quality-gates.md).
+  The change lifecycle and risk classes are in
+  [docs/engineering/change-management.md](docs/engineering/change-management.md).
 
 ## Commit messages
 
-Use [Conventional Commits](https://www.conventionalcommits.org/):
+Use [Conventional Commits](https://www.conventionalcommits.org/). The full rules are in
+[docs/engineering/commit-conventions.md](docs/engineering/commit-conventions.md).
 
 ```text
 <type>(<scope>): <short imperative summary>
@@ -56,10 +67,19 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 <optional body: why the change was made, not what the diff shows>
 ```
 
-- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`.
-- Scope is the project or area, such as `axiom`, `sim`, `ci`, or `docs`.
+- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `revert`.
+- Scope is the project or area, such as `axiom`, `sim`, `ci`, `docs`, or `release`.
 - Keep the summary under 72 characters, in the imperative mood.
+- A breaking change has `!` after the type and a `BREAKING CHANGE:` footer.
 - Example: `fix(axiom): compress back-pressure in one pass`
+- The pull request title becomes the commit on `main`, so it must follow the same format.
+- `Co-Authored-By` and `Claude-Session` trailers are allowed for AI-assisted work.
+
+## Releases
+
+Releases are cut by the owner from `main`. The steps are in
+[docs/engineering/release-process.md](docs/engineering/release-process.md).
+Tags are never moved or deleted. See [docs/engineering/tag-protection.md](docs/engineering/tag-protection.md).
 
 ## Architecture decisions
 
