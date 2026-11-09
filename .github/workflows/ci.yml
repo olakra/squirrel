@@ -161,6 +161,42 @@ jobs:
           path: ${{ env.AXIOM_DIR }}/web/axiom.wasm
           if-no-files-found: error
 
+  tictactoe:
+    # The tic-tac-toe crates in projects/tictactoe: core, and web (the wasm wrapper and its build).
+    # Runs on its own so a failure names this project, not axiom.
+    name: tictactoe
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TICTACTOE_DIR: projects/tictactoe
+      # Must equal the exact pin of wasm-bindgen in projects/tictactoe/web/Cargo.toml.
+      WASM_BINDGEN_VERSION: 0.2.100
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.TICTACTOE_DIR }}
+      - name: cargo fmt --check
+        working-directory: ${{ env.TICTACTOE_DIR }}
+        run: cargo fmt --all -- --check
+      - name: cargo clippy
+        working-directory: ${{ env.TICTACTOE_DIR }}
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: cargo test
+        working-directory: ${{ env.TICTACTOE_DIR }}
+        run: cargo test --workspace
+      # The wasm-bindgen CLI must match the crate version exactly.
+      - name: install wasm-bindgen-cli
+        run: cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+      - name: build the browser bundle
+        working-directory: ${{ env.TICTACTOE_DIR }}
+        run: bash web/build.sh
+
   supply-chain:
     # Licenses, known advisories, yanked and unmaintained crates, banned sources.
     # Policy lives in projects/axiom/deny.toml.
