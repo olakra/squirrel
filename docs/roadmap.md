@@ -11,7 +11,7 @@ Quality gates are in [engineering/quality-gates.md](engineering/quality-gates.md
 
 | Milestone | Goal | Status |
 |---|---|---|
-| [v0.1.1](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core | In progress |
+| [v0.1.1](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core, browser item feed, tic-tac-toe web game | Release PR open; tag pending owner. Six issues open, see [release notes](releases/v0.1.1.md) |
 | [v0.2.0](https://github.com/olakra/squirrel/milestone/2) | Playable vertical slice: rendering and inserters wired to the world | Not started |
 | [v0.3.0](https://github.com/olakra/squirrel/milestone/3) | Steam Early Access build: desktop shell, Steam depots, Deck-verified checklist items | Not started |
 | [v1.0.0](https://github.com/olakra/squirrel/milestone/4) | Full release | Scope not defined |

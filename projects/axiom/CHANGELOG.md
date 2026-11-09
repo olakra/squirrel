@@ -8,6 +8,11 @@ All notable changes to the axiom crate are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-08
+
+Milestone 1: the simulation core, its WASM export layer, the browser item feed, and the
+repository governance.
+
 ### Added
 
 - Simulation items are drawn each frame from a WASM snapshot (`axiom_snapshot_items`,
@@ -15,18 +20,6 @@ All notable changes to the axiom crate are recorded here. The format follows
   instanced quads.
 - `F` feeds one item into the head of the chain.
 - Pure mapping from a snapshot to renderer instances (`web/items.js`), with tests.
-
-### Changed
-
-- Coverage gate tests call the FFI exports directly, so the export layer counts toward the
-  function threshold.
-
-## [0.1.1] - 2026-11-08
-
-Milestone 1: the simulation core, its WASM export layer, and the repository governance.
-
-### Added
-
 - Belt model: fixed-capacity ring-buffer lanes with O(1) rear push and front pop, checked
   against a reference implementation.
 - Splitter: deterministic round-robin routing, with handling for blocked outputs.
@@ -37,6 +30,11 @@ Milestone 1: the simulation core, its WASM export layer, and the repository gove
 - Governance: CI gates for format, clippy, tests on three operating systems, coverage, bench
   smoke, WASM build, supply chain, and Markdown. Engineering standards, ADRs, and the
   Conventional Commits rules.
+
+### Changed
+
+- Coverage gate tests call the FFI exports directly, so the export layer counts toward the
+  function threshold.
 
 [Unreleased]: https://github.com/olakra/squirrel/compare/v0.1.1...HEAD
 [0.1.1]: https://github.com/olakra/squirrel/releases/tag/v0.1.1
