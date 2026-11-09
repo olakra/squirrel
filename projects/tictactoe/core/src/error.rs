@@ -13,8 +13,13 @@ pub enum MoveError {
 }
 
 impl fmt::Display for MoveError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            MoveError::OutOfBounds => "that cell is not on the board; use a number from 0 to 8",
+            MoveError::Occupied => "that cell is already taken",
+            MoveError::GameOver => "the game is already over",
+        };
+        f.write_str(message)
     }
 }
 
