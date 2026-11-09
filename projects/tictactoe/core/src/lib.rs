@@ -26,6 +26,16 @@ pub enum Mark {
     O,
 }
 
+impl Mark {
+    /// The mark that moves after this one.
+    fn other(self) -> Mark {
+        match self {
+            Mark::X => Mark::O,
+            Mark::O => Mark::X,
+        }
+    }
+}
+
 /// The state of a game, as read from the board.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
