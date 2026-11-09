@@ -19,6 +19,9 @@ each project's `docs/ARCHITECTURE.md`.
 | [performance-budget.md](performance-budget.md) | The 60 Hz tick budget, the stress scenario, the sandbox baseline, and what the owner must measure on target hardware. |
 | [save-format-policy.md](save-format-policy.md) | Save header, version rules, loader rules, and migrations. Policy only; no save code exists yet. |
 | [v1-scope.md](v1-scope.md) | Draft v1.0.0 scope: player-visible capabilities and exit criteria. Owner approval required. |
+| [../studio/personas.md](../studio/personas.md) | The six studio personas for the tic-tac-toe game: decision rights, questions, artifacts and handoffs. |
+| [../studio/art-direction.md](../studio/art-direction.md) | Modern minimalist art direction: colour tokens with contrast ratios, type, spacing, motion and i18n rules. |
+| [../studio/icons.md](../studio/icons.md) | The icon set for the tic-tac-toe game and the grid rules each icon follows. |
 
 Accepted decisions:
 
