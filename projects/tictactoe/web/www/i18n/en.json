@@ -1,0 +1,18 @@
+{
+  "locale.code": "en",
+  "locale.dir": "ltr",
+  "app.title": "Tic-tac-toe",
+  "app.heading": "Tic-tac-toe",
+  "board.label": "Game board",
+  "cell.label": "Row {row}, column {column}, {state}",
+  "cell.state.empty": "empty",
+  "mark.X": "X",
+  "mark.O": "O",
+  "status.turn": "{mark} to play",
+  "status.won": "{mark} wins",
+  "status.draw": "It is a draw",
+  "move.taken": "That cell is already taken",
+  "move.over": "This round is over. Press Reset to play again",
+  "action.reset": "Reset",
+  "error.load": "The game could not load. Reload the page to try again"
+}
