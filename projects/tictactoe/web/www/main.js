@@ -76,9 +76,18 @@ function updateCell(cell, symbol, label, roundOver) {
   cell.setAttribute("aria-disabled", String(locked));
 }
 
+// SVG has no `hidden` property, so the attribute is set and removed directly.
+function setWinLayerShown(shown) {
+  if (shown) {
+    page.winLayer.removeAttribute("hidden");
+  } else {
+    page.winLayer.setAttribute("hidden", "");
+  }
+}
+
 function renderWinLine(board) {
   const line = winningCells(board);
-  page.winLayer.hidden = line === null;
+  setWinLayerShown(line !== null);
   if (line === null) {
     return;
   }
