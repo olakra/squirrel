@@ -13,4 +13,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 tictactoe-core = { path = "../core" }
-wasm-bindgen = "0.2"
+# Exact pin. The wasm-bindgen CLI in CI (.github/workflows/ci.yml, WASM_BINDGEN_VERSION)
+# must be the same version, or the generated glue does not match the .wasm file.
+wasm-bindgen = "=0.2.100"
