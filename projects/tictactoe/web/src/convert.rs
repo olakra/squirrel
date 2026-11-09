@@ -10,22 +10,36 @@ pub const EMPTY_SYMBOL: char = '.';
 
 /// One board cell as a character: "X", "O" or "." for empty.
 pub fn cell_symbol(cell: Option<Mark>) -> char {
-    todo!()
+    match cell {
+        None => EMPTY_SYMBOL,
+        Some(Mark::X) => 'X',
+        Some(Mark::O) => 'O',
+    }
 }
 
 /// The 9 cells as a 9-character string, row by row from the top-left cell.
 pub fn board_to_string(board: &Board) -> String {
-    todo!()
+    board.iter().map(|&cell| cell_symbol(cell)).collect()
 }
 
 /// The name of a mark, "X" or "O".
 pub fn mark_name(mark: Mark) -> &'static str {
-    todo!()
+    match mark {
+        Mark::X => "X",
+        Mark::O => "O",
+    }
 }
 
 /// The status as a lowercase name: "in_progress", "won_x", "won_o" or "draw".
+///
+/// These names are part of the contract with main.js, so change them only together.
 pub fn status_name(status: Status) -> &'static str {
-    todo!()
+    match status {
+        Status::InProgress => "in_progress",
+        Status::Won(Mark::X) => "won_x",
+        Status::Won(Mark::O) => "won_o",
+        Status::Draw => "draw",
+    }
 }
 
 #[cfg(test)]
