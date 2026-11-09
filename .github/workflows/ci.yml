@@ -196,6 +196,13 @@ jobs:
       - name: build the browser bundle
         working-directory: ${{ env.TICTACTOE_DIR }}
         run: bash web/build.sh
+      # Keeps the built site so it can be served and tested in a browser.
+      - name: upload the browser bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: tictactoe-site
+          path: ${{ env.TICTACTOE_DIR }}/web/www
+          if-no-files-found: error
 
   supply-chain:
     # Licenses, known advisories, yanked and unmaintained crates, banned sources.
