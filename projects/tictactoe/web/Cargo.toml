@@ -1,0 +1,16 @@
+[package]
+name = "tictactoe-web"
+version = "0.1.0"
+edition = "2021"
+description = "WebAssembly wrapper around the tic-tac-toe core for the browser front end"
+license = "UNLICENSED"
+publish = false
+
+# cdylib produces the .wasm file for the browser. rlib lets the host test the
+# plain conversion helpers in convert.rs without a browser.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+tictactoe-core = { path = "../core" }
+wasm-bindgen = "0.2"
