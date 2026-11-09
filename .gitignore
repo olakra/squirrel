@@ -35,3 +35,6 @@ dist/
 # Build output and local CI logs
 dist/
 projects/axiom/bench-smoke.log
+
+# Local git worktrees created by agent sessions.
+.claude/worktrees/
