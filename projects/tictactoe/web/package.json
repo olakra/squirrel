@@ -1,0 +1,10 @@
+{
+  "name": "tictactoe-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tests for the tic-tac-toe web front end's pure JavaScript modules",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
