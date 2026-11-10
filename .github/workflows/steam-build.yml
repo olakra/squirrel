@@ -41,7 +41,7 @@ jobs:
         working-directory: ${{ env.AXIOM_DIR }}
         run: bash scripts/build-wasm.sh
       - name: upload axiom.wasm
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: axiom-wasm
           path: projects/axiom/web/axiom.wasm
@@ -119,7 +119,7 @@ jobs:
         shell: bash
         run: tar -czf "../depot-${{ matrix.depot }}.tar.gz" "${{ matrix.depot }}"
       - name: upload depot archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: depot-${{ matrix.depot }}
           path: ${{ env.DESKTOP_DIR }}/dist/depot-${{ matrix.depot }}.tar.gz
