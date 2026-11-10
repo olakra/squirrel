@@ -8,7 +8,19 @@
 # docs/engineering/release-process.md. Targets marked "(owner)" create tags, push shared refs,
 # or change GitHub settings. Agents never run them (CLAUDE.md).
 
-SHELL := /bin/bash
+# Recipes need bash. On Windows, "bash" on PATH is often C:\Windows\System32\bash.exe, the WSL
+# launcher, which fails without a WSL distro. So use Git for Windows' bash there. The 8.3 short
+# path avoids the space in "Program Files", which make cannot handle in SHELL. Override it with
+# `make GIT_BASH=D:/Tools/Git/bin/bash.exe ...` (forward slashes, no spaces) if Git is elsewhere.
+ifeq ($(OS),Windows_NT)
+  GIT_BASH ?= C:/PROGRA~1/Git/bin/bash.exe
+  ifeq ($(wildcard $(GIT_BASH)),)
+    $(error Git Bash not found at $(GIT_BASH). Install Git for Windows, or pass GIT_BASH=<path to bash.exe>)
+  endif
+  SHELL := $(GIT_BASH)
+else
+  SHELL := /bin/bash
+endif
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := ci
 

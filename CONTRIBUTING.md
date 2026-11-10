@@ -17,7 +17,9 @@ You need:
 - Bun 1.4.4, for the desktop shell and the JavaScript tests (`make js-test`). Install it from bun.sh.
 - Node.js 22 or newer. Electron's install script runs on Node, markdownlint runs through `npx`
   in CI and pre-commit, and the tic-tac-toe JavaScript tests run on `node --test`.
-- GNU `make`.
+- GNU `make` and bash. On Windows, install Git for Windows and `winget install ezwinports.make`. The Makefile
+  runs its recipes with Git Bash, so `make` works from PowerShell too. If Git is not in `C:\Program Files\Git`, pass
+  `GIT_BASH=<path to bash.exe>`.
 - SSH commit signing. It is required for local work, because `main` accepts only signed commits.
   The steps are in [docs/engineering/claude-code-setup.md](docs/engineering/claude-code-setup.md#signed-commits).
 - Optional: `pre-commit`, to run the same checks on every commit.
