@@ -10,8 +10,11 @@ Releases are tagged `tictactoe-vX.Y.Z`.
 
 ## [Unreleased]
 
-Everything below ships in the first standalone release, `tictactoe-v0.1.0`. The same code was also
-included in the repository tag `v0.1.2`, which was cut before projects had their own tags.
+## [0.1.0] - 2026-11-10
+
+The first standalone release of the tic-tac-toe web game. The release files are the browser bundle
+(`tictactoe-web-0.1.0.tar.gz`, the `web/www` folder with the built WebAssembly) and `SHA256SUMS`. The
+same code was also included in the repository tag `v0.1.2`, cut before projects had their own tags.
 
 ### Added
 
@@ -28,4 +31,5 @@ included in the repository tag `v0.1.2`, which was cut before projects had their
 
 - Reset clears the win line.
 
-[Unreleased]: https://github.com/olakra/squirrel/commits/main/projects/tictactoe
+[Unreleased]: https://github.com/olakra/squirrel/compare/tictactoe-v0.1.0...HEAD
+[0.1.0]: https://github.com/olakra/squirrel/releases/tag/tictactoe-v0.1.0
