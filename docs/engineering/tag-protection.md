@@ -1,8 +1,10 @@
 # Tag protection and immutable releases
 
 A release tag is a permanent pointer to a commit. Users, the attestation, and the checksums all
-depend on it. So a `v*` tag is never moved, re-pointed, deleted, or pushed twice. This page explains
-how the repository enforces that, and what the owner must set in the UI.
+depend on it. So a release tag is never moved, re-pointed, deleted, or pushed twice. This page
+explains how the repository enforces that, and what the owner must set in the UI.
+
+Release tags are `<project>-vX.Y.Z`, plus the legacy `v0.1.2`. See [versioning.md](versioning.md).
 
 ## Rules
 
@@ -11,41 +13,37 @@ how the repository enforces that, and what the owner must set in the UI.
 2. **Never delete a tag or a release.** Published releases stay. Mark a bad one with a warning
    instead (see the rollback section of the release process).
 3. **Create a tag once, for one version.** The `verify` job refuses a tag whose release already
-   exists, and it refuses a tag that is not annotated or not on `main`.
+   exists. It refuses a tag that is not annotated, or not on `main` or the project's support branch.
+4. **Sign every tag.** `make release-tag` creates an annotated, signed tag with `git tag -s`. The
+   signing setup is in [claude-code-setup.md](claude-code-setup.md#signed-commits).
 
-## Ruleset: `.github/rulesets/tags.json`
+## Rulesets
 
-The ruleset targets `refs/tags/v*` and does three things:
+Two tag rulesets cover the same patterns:
 
-| Rule | Effect |
-|---|---|
-| `creation` | Only the process that the ruleset allows can create a release tag. |
-| `deletion` | No one can delete a release tag. |
-| `non_fast_forward` | No one can move a tag to a commit that is not a descendant of the old one. |
+- `refs/tags/v*`: the legacy tag `v0.1.2`, and any other unprefixed tag.
+- `refs/tags/*-v*`: every project tag, such as `axiom-v0.2.0`.
 
-`bypass_actors` is empty, so the rules bind everyone, including the owner and repository admins.
+| Ruleset | File | Rules | Bypass |
+|---|---|---|---|
+| `release tags` | `.github/rulesets/tags.json` | `deletion`, `non_fast_forward`, `update` | None. The rules bind everyone, admins included. |
+| `release tag creation` | `.github/rulesets/tag-creation.json` | `creation` | Repository admin role, always. |
 
-The effect for the owner: with the ruleset active, a new `v*` tag cannot be pushed. To cut a release,
-the owner does this, in order:
+The effect:
 
-1. Disable the `release tags` ruleset in Settings, then Rules, then Rulesets. Use "Disabled", not
-   "Evaluate". "Evaluate" logs the attempt but still lets it through.
-2. Push the annotated tag (see the release runbook, step 8).
-3. Set the ruleset back to "Active" straight away. Check that the tag now shows as protected.
+- Only a repository admin can create a release tag. A contributor, an agent, or a bot cannot.
+- Nobody, including an admin, can delete a release tag or move it.
 
-This keeps tag creation a deliberate, recorded act. A decision for the owner: if the disable step
-is too much friction, add the owner as a bypass actor for the `creation` rule only. That removes
-this procedure at the cost of letting the owner move a tag. Do not add a bypass for `deletion` or
-`non_fast_forward`.
+This replaces the old procedure, where the owner disabled the tag ruleset, pushed the tag, and enabled
+it again. No ruleset is disabled during a release. The admin bypass covers creation only. Do not add
+a bypass to `release tags`.
 
-## Applying the ruleset
+## Applying the rulesets
 
-`scripts/ci/apply-branch-protection.sh --dry-run` prints the payload of `tags.json` and of `main.json`
-without calling the API. `--apply` creates or updates both by name. Run it once, as the owner, and
-read [branch-protection.md](branch-protection.md) first.
-
-Do not use `--apply` to re-enable the tag ruleset during a release. Use the UI, so the change shows
-up in the settings log at the moment it happens.
+`make github-protect-dry` prints the payload of every ruleset, the repository merge settings, and the
+`production` environment, without calling the API. `make github-protect` creates or updates them by
+name. Both run `scripts/ci/apply-branch-protection.sh`. Run them as the owner, and read
+[branch-protection.md](branch-protection.md) first.
 
 ## Immutable releases (owner, in the UI)
 
@@ -58,15 +56,22 @@ published release's assets or to re-point its tag. The rulesets do not turn it o
 3. Confirm with a test release on a scratch repository, or by reading the GitHub documentation for
    the current wording, because the label has changed in the past.
 
-Immutable releases protect the assets and the tag after publication. The tag ruleset protects the
+Immutable releases protect the assets and the tag after publication. The tag rulesets protect the
 tag before publication, when a release does not yet exist.
+
+An immutable release also cannot get its assets later. So a release created by hand in the UI, before
+the workflow uploads its assets, stays empty. That is one more reason never to create a release in
+the UI, see [release-process.md](release-process.md#never-create-a-release-in-the-github-ui).
 
 ## What is checked where
 
 | Check | Where it runs | What it blocks |
 |---|---|---|
-| Tag ruleset | GitHub, on every push of a `v*` tag | Creating (by unauthorised people), deleting, or moving a tag |
+| `release tag creation` ruleset | GitHub, on every push of a matching tag | Creating a release tag without the admin role |
+| `release tags` ruleset | GitHub, on every push of a matching tag | Deleting or moving a release tag, for everyone |
+| `make release-check PROJECT=<project>` | Local, before the release pull request | Version files, tag name, and changelog section that disagree |
+| `verify` job, tag format and sources agree | `.github/workflows/release.yml` | A tag that does not match the project's version and changelog |
+| `verify` job, annotated and on the right branch | `.github/workflows/release.yml` | Lightweight tags, and tags off `main` or `support/<project>-vX.Y` |
 | `verify` job, release-exists check | `.github/workflows/release.yml` | Publishing again to a tag that already has a release, including drafts |
-| `verify` job, annotated and on `main` | `.github/workflows/release.yml` | Lightweight tags, and tags off `main` |
-| `production` environment reviewer | `.github/workflows/release.yml`, job `release` | Publishing without an approval |
+| `production` environment | `.github/workflows/release.yml`, job `release` | Publishing without an approval, or from a ref that is not a `*-v*.*.*` tag |
 | Immutable releases | GitHub, after publication | Changing assets or re-pointing a published release's tag |

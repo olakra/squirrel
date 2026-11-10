@@ -14,7 +14,7 @@ flowchart LR
   desk["axiom-desktop<br/>projects/axiom/desktop"]
   steam["axiom-steam<br/>projects/axiom/steam"]
   docs["docs-site<br/>docs, projects/axiom/docs"]
-  ci["ci-scripts<br/>scripts/ci"]
+  ci["ci-scripts<br/>scripts/ci, scripts/release"]
 
   core -->|"wasm build runs core tests first"| wasm
   wasm -->|"web/axiom.wasm"| web
@@ -37,7 +37,7 @@ edge in the `moon.yml` and in this table together.
 | axiom-web to axiom-desktop | `orchestration/projects/axiom-desktop/moon.yml`: `package` depends on `axiom-web:build` | `projects/axiom/desktop/scripts/prepare-web.mjs` copies `../web` and fails without `axiom.wasm` |
 | axiom-desktop to axiom-steam | `orchestration/projects/axiom-steam/moon.yml`: `package` depends on `axiom-desktop:package` | `projects/axiom/desktop/scripts/stage-depot.mjs` builds the depot folders that `projects/axiom/steam/render_vdf.py` describes |
 | axiom-core to docs-site | `orchestration/projects/docs-site/moon.yml`: `dependsOn`, and the crate source as a task input | `docs/engineering/engineering-principles.md` names `projects/axiom/src/simulation`. The diagram check that uses this edge does not exist yet |
-| axiom-core to ci-scripts | `orchestration/projects/ci-scripts/moon.yml`: `dependsOn` | `scripts/ci/check-release-tag.sh` reads `projects/axiom/Cargo.toml` and `projects/axiom/CHANGELOG.md` |
+| axiom-core to ci-scripts | `orchestration/projects/ci-scripts/moon.yml`: `dependsOn` | `scripts/ci/check-release-tag.sh` reads each project's version file and `CHANGELOG.md` through `scripts/release/projects.sh` (axiom and tictactoe). tictactoe has no moon project yet |
 | ci-scripts to axiom-wasm | `orchestration/projects/axiom-wasm/moon.yml`: `package` depends on `ci-scripts:release-verify` | `.github/workflows/release.yml`, job `verify`, runs the same tag check before any build |
 
 The order inside a project is also declared. For example, `axiom-desktop:package` depends on

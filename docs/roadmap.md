@@ -7,12 +7,15 @@ can stand behind it.
 Status of the code is in [projects/axiom/docs/ARCHITECTURE.md](../projects/axiom/docs/ARCHITECTURE.md).
 Quality gates are in [engineering/quality-gates.md](engineering/quality-gates.md).
 
+The milestones after v0.1.2 are axiom versions. They are tagged with the project prefix, such as `axiom-v0.2.0`
+(see [engineering/branching-strategy.md](engineering/branching-strategy.md)).
+
 ## Milestones
 
 | Milestone | Goal | Status |
 |---|---|---|
-| [v0.1.2](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core, browser item feed, tic-tac-toe web game | Release PR open; tag pending owner. Six issues open, see [release notes](releases/v0.1.2.md) |
-| [v0.2.0](https://github.com/olakra/squirrel/milestone/2) | Playable vertical slice: rendering and inserters wired to the world | Not started |
+| [v0.1.2](https://github.com/olakra/squirrel/milestone/1) | Deterministic simulation core, browser item feed, tic-tac-toe web game | Released 2026-11-09 (tag `v0.1.2`). Release assets still to be uploaded by the owner, see [release notes](releases/v0.1.2.md) |
+| [v0.2.0](https://github.com/olakra/squirrel/milestone/2) | Playable vertical slice: rendering and inserters wired to the world (tag `axiom-v0.2.0`) | Not started |
 | [v0.3.0](https://github.com/olakra/squirrel/milestone/3) | Steam Early Access build: desktop shell, Steam depots, Deck-verified checklist items | Not started |
 | [v1.0.0](https://github.com/olakra/squirrel/milestone/4) | Full release | Scope not defined |
 
@@ -31,7 +34,7 @@ Done in code: belt lane and chain, fixed-timestep world, state hash, 1,000-tick 
 | [#7](https://github.com/olakra/squirrel/issues/7) | Restore the release runbook that release.yml links to | Bug | ready |
 | [#8](https://github.com/olakra/squirrel/issues/8) | Mermaid diagrams for the belt model, tick order, and inserter states | Feature | ready |
 | [#9](https://github.com/olakra/squirrel/issues/9) | Decide the state hash: FNV-1a or Blake3 | Task | ready |
-| [#10](https://github.com/olakra/squirrel/issues/10) | Owner: production release environment and tag ruleset | Task | **blocked on owner** |
+| [#10](https://github.com/olakra/squirrel/issues/10) | Owner: production release environment and tag ruleset | Task | **needs owner**: production reviewer and tag rulesets, now scripted with `make github-protect` |
 
 ## v0.2.0: playable vertical slice
 
@@ -75,7 +78,7 @@ flowchart LR
     I9["#9 hash decision"] --> I19["#19 save format"]
     I19 --> M3
     I12["#12 WASM browser test"] --> I14
-    I10["#10 release env (owner)"] -. gates first tag .-> M1
+    I10["#10 release env (owner)"] -. gates next release .-> M2
     I15["#15 Steamworks (owner)"] --> I17["#17 icons"]
     I18["#18 signing (owner)"] --> M3
     I16["#16 Deck checks"] --> M3
@@ -91,8 +94,8 @@ delivery. Milestones have no dates yet.
 
 These cannot be done from the repository. Each issue states the owner steps.
 
-- [#10](https://github.com/olakra/squirrel/issues/10): the `production` environment and tag ruleset (needed before the
-  first tag).
+- [#10](https://github.com/olakra/squirrel/issues/10): the `production` environment reviewer and the tag rulesets.
+  The owner applies them with `make github-protect`.
 - [#15](https://github.com/olakra/squirrel/issues/15): Steamworks partner account, App ID, depots, and upload secrets.
 - [#18](https://github.com/olakra/squirrel/issues/18): code-signing certificates for macOS and Windows.
 

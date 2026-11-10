@@ -25,6 +25,9 @@ Choose one (see docs/engineering/change-management.md).
 - [ ] normal: any change to the crate's behaviour, dependencies, or build
 - [ ] emergency: a fix for a released version that cannot wait for the normal flow
 
+<!-- Emergency fixes for a released version go on a `hotfix/<name>` branch into `support/<project>-vX.Y`
+     (`make hotfix-start`), then are forward-ported to main. See docs/engineering/branching-strategy.md. -->
+
 ## Rollback plan
 
 <!-- How to undo this change. For example: "revert this commit; no data or format changed",
@@ -37,10 +40,12 @@ Choose one (see docs/engineering/change-management.md).
 
 ## CHANGELOG
 
-- [ ] `projects/axiom/CHANGELOG.md` has an entry under `[Unreleased]`
+- [ ] The affected project's `CHANGELOG.md` (for example `projects/axiom/CHANGELOG.md` or
+      `projects/tictactoe/CHANGELOG.md`) has an entry under `[Unreleased]`
 - [ ] Or the `no-changelog` label is set. Reason:
 
-<!-- Required when the label is set and projects/axiom/src or Cargo.toml changed. -->
+<!-- Required when the label is set and a project's watched source paths changed. Repository-wide
+     changes (docs, CI) need no project changelog. -->
 
 ## Test evidence
 
@@ -55,6 +60,8 @@ Choose one (see docs/engineering/change-management.md).
 - [ ] Docs updated (ARCHITECTURE.md, README, or docs/engineering) where behaviour or structure changed
 - [ ] ADR added if this is an architectural decision (see docs/engineering/adr/)
 - [ ] `make ci` passes locally
+- [ ] Branch name follows docs/engineering/branching-strategy.md
+- [ ] Commits are signed
 - [ ] Self-review done against docs/engineering/code-review.md
 - [ ] Changed lines are roughly 400 or fewer, or the PR says why it cannot be split
 
