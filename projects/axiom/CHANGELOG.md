@@ -8,7 +8,7 @@ All notable changes to the axiom crate are recorded here. The format follows
 
 ## [Unreleased]
 
-## [0.1.1] - 2026-11-08
+## [0.1.2] - 2026-11-09
 
 Milestone 1: the simulation core, its WASM export layer, the browser item feed, and the
 repository governance.
@@ -36,5 +36,5 @@ repository governance.
 - Coverage gate tests call the FFI exports directly, so the export layer counts toward the
   function threshold.
 
-[Unreleased]: https://github.com/olakra/squirrel/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/olakra/squirrel/releases/tag/v0.1.1
+[Unreleased]: https://github.com/olakra/squirrel/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/olakra/squirrel/releases/tag/v0.1.2

@@ -17,7 +17,7 @@ the CI workflows), the commit SHA, the steps, and the impact as you see it.
 
 ## Supported versions
 
-There are no released versions yet. The first release will be `v0.1.1`. Until a release is published, only the current
+There are no released versions yet. The first release will be `v0.1.2`. Until a release is published, only the current
 `main` branch is supported, and fixes land there.
 
 After the first release, the latest published release is supported. Older releases are not patched; the fix is to
