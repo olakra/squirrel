@@ -14,8 +14,8 @@ type says what kind of change the commit makes. The changelog and the version bu
 ```
 
 - **type**: one word from the table below. Lowercase.
-- **scope**: optional. The area that changed, in lowercase: `axiom`, `sim`, `wasm`, `ci`, `docs`,
-  `release`. It may contain `.`, `_`, `/`, or `-`.
+- **scope**: optional. The area that changed, in lowercase: `axiom`, `tictactoe`, `sim`, `wasm`,
+  `ci`, `docs`, `release`, `deps`. It may contain `.`, `_`, `/`, or `-`.
 - **!**: optional. Marks a breaking change. See the footer rule below.
 - **summary**: imperative mood ("add", not "added"). No full stop at the end.
 - The whole subject line is 72 characters or fewer.
@@ -32,7 +32,7 @@ type says what kind of change the commit makes. The changelog and the version bu
 | `docs` | Documentation only | none |
 | `build` | Build scripts, toolchain, or dependency changes | none, unless it changes the artifact |
 | `ci` | Workflows, CI scripts, and gates | none |
-| `chore` | Maintenance, such as the release commit | none |
+| `chore` | Maintenance, such as the release commit `chore(<project>): release vX.Y.Z` | none |
 | `revert` | Undoes an earlier commit | the reverted type's effect, decided at release |
 
 Two more rules apply to every type:
@@ -63,6 +63,19 @@ feat(axiom)!: change axiom_feed to return a status code
 BREAKING CHANGE: axiom_feed returned 0 on failure. It now returns a status code. The browser
 harness must check for the new codes.
 ```
+
+```text
+chore(axiom): release v0.2.0
+```
+
+## Release and dependency commits
+
+- The release commit subject is `chore(<project>): release vX.Y.Z`, for example
+  `chore(tictactoe): release v0.1.0`. `make release-prepare` writes it. See
+  [release-process.md](release-process.md).
+- Dependabot pull requests use `build(deps): ...` for crate updates and `ci(deps): ...` for workflow
+  action updates. The prefixes are set in `.github/dependabot.yml`, so their titles pass
+  `commit-lint`.
 
 ## Breaking changes
 
@@ -107,6 +120,16 @@ squash commit on `main` takes its subject from the pull request title. So the ti
 valid subject too. The `commit-lint` job checks the title as well as every commit in the pull
 request. The repository setting "Default to pull request title" must be on. See
 [branch-protection.md](branch-protection.md).
+
+## Signed commits
+
+Every commit on `main` is signed. The rulesets require it on `main` and on `support/**`.
+
+- GitHub signs the squash commit when a pull request merges, so the commit on `main` is always
+  signed.
+- Sign your own commits too. Local git, and Claude Code on the command line, desktop, or IDE, sign
+  with your SSH key. Claude Code on the web signs its commits itself.
+- The setup, for Windows and macOS, is in [claude-code-setup.md](claude-code-setup.md#signed-commits).
 
 ## What the checks enforce
 

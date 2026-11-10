@@ -17,11 +17,17 @@ the CI workflows), the commit SHA, the steps, and the impact as you see it.
 
 ## Supported versions
 
-There are no released versions yet. The first release will be `v0.1.2`. Until a release is published, only the current
-`main` branch is supported, and fixes land there.
+Each project is released on its own. The latest published release of each project is supported. Older releases
+are not patched; the fix is to upgrade.
 
-After the first release, the latest published release is supported. Older releases are not patched; the fix is to
-upgrade.
+| Project | Supported |
+|---|---|
+| axiom | `v0.1.2`, released 2026-11-09, and `main` |
+| tictactoe | `main` only. It has no release yet. Its first will be `tictactoe-v0.1.0` |
+
+Fixes land on `main`. When a released version needs a fix before the next normal release, it goes out as a patch
+release. If `main` already has unreleased work, the patch is cut from a support branch (see
+[docs/engineering/branching-strategy.md](docs/engineering/branching-strategy.md)).
 
 ## Response expectations
 
@@ -37,8 +43,8 @@ We will keep you informed of progress. If we decide not to fix something, we wil
 ## Scope
 
 In scope: the code in this repository, including the desktop shell (`projects/axiom/desktop`), the web build
-(`projects/axiom/web`), the Steam packaging (`projects/axiom/steam`), and the CI and release workflows
-(`.github/workflows`).
+(`projects/axiom/web`), the Steam packaging (`projects/axiom/steam`), the tic-tac-toe game (`projects/tictactoe`),
+and the CI and release workflows (`.github/workflows`).
 
 Out of scope: third-party services and platforms (Steam, GitHub, Electron, Chromium) except where our configuration
 makes the problem worse. Report those upstream.

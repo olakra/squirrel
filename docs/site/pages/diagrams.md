@@ -147,15 +147,15 @@ Checked against: `projects/axiom/src/simulation/inserter.rs` (`Phase`, `Inserter
 
 ## Release pipeline
 
-The release workflow in `.github/workflows/release.yml` runs on a tag that matches `v*.*.*`. Each job needs the one
-before
-it. The last job waits for a reviewer in the `production` environment.
+The release workflow in `.github/workflows/release.yml` runs on a tag that matches `<project>-v*.*.*`, such as
+`axiom-v0.2.0` or `tictactoe-v0.1.0`. The verify job outputs the project and the version, and the later jobs use
+them. Each job needs the one before it. The last job waits for a reviewer in the `production` environment.
 
 ```mermaid
 flowchart LR
-    tag["Tag push: v MAJOR.MINOR.PATCH"] --> verify["verify: check-release-tag.sh"]
+    tag["Tag push: project-vMAJOR.MINOR.PATCH"] --> verify["verify: check-release-tag.sh<br/>outputs project, version"]
     verify --> ci["ci: make ci"]
-    ci --> build["build: build-wasm.sh, SHA256SUMS"]
+    ci --> build["build: make release-artifacts<br/>dist/ and SHA256SUMS"]
     build --> gate{"Approval: production environment"}
     gate -->|approved| release["release: attest and gh release create"]
 ```

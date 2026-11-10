@@ -1,6 +1,6 @@
 [package]
 name = "tictactoe-web"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
 description = "WebAssembly wrapper around the tic-tac-toe core for the browser front end"
 license = "UNLICENSED"

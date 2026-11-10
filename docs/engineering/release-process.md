@@ -1,11 +1,16 @@
 # Release process
 
-This is the runbook for shipping a version of the axiom crate. The pipeline is
+This is the runbook for shipping a version of one project. Each project in
+`scripts/release/projects.sh` (axiom, tictactoe) releases on its own. The pipeline is
 `.github/workflows/release.yml`. The version rules are in [versioning.md](versioning.md). Tags are
-never moved or deleted, see [tag-protection.md](tag-protection.md).
+never moved or deleted, see [tag-protection.md](tag-protection.md). The branches are described in
+[branching-strategy.md](branching-strategy.md).
 
 The owner (@olakra) runs every step that creates a tag or approves a release. An agent or a
 contributor may prepare the release pull request, but may not push a tag.
+
+In the commands below, replace `axiom` and `0.2.0` with the project and the version. Run
+`make versions` to see each project's version and latest tag.
 
 ## Cadence
 
@@ -18,75 +23,122 @@ contributor may prepare the release pull request, but may not push a tag.
 
 ## Runbook
 
-1. **Freeze.** Open the release pull request. Until it merges, only fixes for this release go onto
-   `main`. Merge them through normal pull requests.
-2. **Decide the version.** Apply the bump rules in [versioning.md](versioning.md). Write it down in
-   the pull request title, for example `chore(axiom): release v0.2.0`.
-3. **Changelog.** In the same branch, move the entries under `## [Unreleased]` into a new section
-   `## [X.Y.Z] - YYYY-MM-DD`. Put the date of the merge in it. Update the link references at the
-   bottom of `projects/axiom/CHANGELOG.md`. Any breaking change must be marked **Breaking**.
-4. **Bump the version.** Edit `version` in `projects/axiom/Cargo.toml`. Run `cargo build` in
-   `projects/axiom` so `Cargo.lock` picks up the new version. Commit both files in one commit,
-   with the type `chore`.
-5. **Check locally.** Run `make ci`, then `make release-check`. `release-check` confirms the
-   Cargo version, the tag name, and the changelog section agree. It tags nothing.
-6. **Open the release pull request.** Use the template. Risk class: normal. Changelog box: ticked.
-   Leave it open for at least 24 hours (see [change-management.md](change-management.md)).
-7. **Merge.** When every required check is green, squash merge. Check that the commit on `main`
-   has the release subject.
-8. **Tag.** On an up-to-date `main`, create an annotated tag on the merge commit, then push it:
+1. **Decide the version.** Apply the bump rules in [versioning.md](versioning.md) to the entries
+   under `## [Unreleased]` in the project's changelog.
+2. **Prepare.** From a clean tree:
+
+   ```sh
+   make release-prepare PROJECT=axiom VERSION=0.2.0
+   ```
+
+   This creates branch `release/axiom-v0.2.0` from `origin/main`. It moves `[Unreleased]` into
+   `## [0.2.0] - <today>`, updates the link references, bumps the version files and `Cargo.lock`,
+   and makes one signed commit, `chore(axiom): release v0.2.0`. It pushes nothing. Read the diff.
+   Any breaking change must be marked **Breaking**.
+3. **Check locally.** Run `make ci`, then `make release-check PROJECT=axiom`. `release-check`
+   confirms the version files, the tag name, and the changelog section agree. It tags nothing.
+4. **Open the release pull request.**
+
+   ```sh
+   make release-pr PROJECT=axiom VERSION=0.2.0
+   ```
+
+   This pushes the branch and opens the pull request with `gh`. Risk class: normal. Leave it open
+   for at least 24 hours (see [change-management.md](change-management.md)). Until it merges, only
+   fixes for this release go onto `main` for this project.
+5. **Merge.** When every required check is green, squash merge. Auto-merge is allowed. Check that
+   the commit on `main` has the subject `chore(axiom): release v0.2.0`.
+6. **Tag.** On an up-to-date `main`:
 
    ```sh
    git switch main && git pull --ff-only
-   git tag -a vX.Y.Z -m "axiom vX.Y.Z"
-   git push origin vX.Y.Z
+   make release-tag PROJECT=axiom
    ```
 
-   The tag ruleset has no bypass actors, so the owner must disable it for the push and enable it
-   again straight after. Follow the procedure in [tag-protection.md](tag-protection.md).
-9. **Verify.** The `verify` job checks the tag: annotated, equal to the Cargo version, has a
-   changelog section, reachable from `origin/main`, and no release exists yet. A failure stops the
-   run before anything is built.
-10. **Build.** The `ci` job runs `make ci`. The `build` job builds `axiom-X.Y.Z.wasm` and
-    `SHA256SUMS`, then uploads them to the run.
-11. **Approve.** The `release` job waits for a reviewer in the `production` environment. Open the
+   This creates the signed, annotated tag `axiom-v0.2.0` at `HEAD`. Its message is `axiom v0.2.0`
+   followed by the changelog section. It pushes nothing. Only an admin can create a release tag,
+   see [tag-protection.md](tag-protection.md).
+7. **Push the tag.**
+
+   ```sh
+   make release-push PROJECT=axiom
+   ```
+
+   `release.yml` takes over from here.
+8. **Verify.** The `verify` job checks the tag: the tag format, the version files and the changelog
+   agree, the tag is annotated, it is reachable from `main` or from `support/axiom-v0.2`, and no
+   release exists yet. A failure stops the run before anything is built.
+9. **Build.** The `ci` job runs `make ci`. The `build` job runs `make release-artifacts`, which
+   builds the project's artifacts and `SHA256SUMS` in `dist/`, then uploads them to the run.
+10. **Approve.** The `release` job waits for a reviewer in the `production` environment. Open the
     run, check the build results, and approve. Use this step as the final review of the artifacts.
-12. **Publish.** The job checks the checksums, extracts the release notes from the changelog,
-    creates the attestation, and creates the GitHub release. The release is marked pre-release if
-    the version has a `-` suffix.
-13. **Post-release check.** Run these from a clean directory:
+11. **Publish.** The job checks the checksums, creates the attestation, and creates the GitHub
+    release with `gh release create`. The title is `axiom v0.2.0`. The notes come from that
+    project's changelog section. The release is marked pre-release if the version has a `-` suffix.
+    Only stable axiom releases are marked "Latest". Other projects publish with `--latest=false`.
+12. **Post-release check.** Run these from a clean directory:
 
     ```sh
-    gh release download vX.Y.Z --repo olakra/squirrel
+    gh release download axiom-v0.2.0 --repo olakra/squirrel
     sha256sum -c SHA256SUMS
-    gh attestation verify axiom-X.Y.Z.wasm --repo olakra/squirrel
+    gh attestation verify axiom-0.2.0.wasm --repo olakra/squirrel
     ```
 
     Then confirm on the release page that the notes are right, the pre-release flag is right, and
-    the release is marked latest only if it should be. Load the wasm in the browser harness once.
+    the release is marked latest only if it should be. Load the build in the browser once.
+
+## Never create a release in the GitHub UI
+
+The workflow creates the release. Do not use "Draft a new release" or "Create release from tag"
+in the GitHub UI, and do not run `gh release create` by hand.
+
+This is what happened to v0.1.2. A release was created by hand in the UI before the workflow
+finished. The workflow's `gh release create` then failed, so the published release has no assets:
+no wasm and no `SHA256SUMS`. The attestation was created. The fix is an owner action: download the
+run's artifacts and upload them to the existing release.
+
+```sh
+gh run download 42735109330 -n release-artifacts --repo olakra/squirrel
+gh release upload v0.1.2 <files> --repo olakra/squirrel
+```
 
 ## Hotfix flow
 
 Use this for an emergency (see the risk classes in [change-management.md](change-management.md)).
 
-Because `main` is always releasable, a hotfix is a fix on `main` followed by a patch release. The
-tag rule requires every release tag to sit on `main`, so a hotfix cannot ship from a branch that
-`main` does not contain.
+**If `main` has no unreleased work for the project**, fix on `main` and cut a patch release with the
+runbook above. Branch with `make branch TYPE=fix NAME=<short-name>`, add a test that fails before
+the fix, and use risk class `emergency`.
 
-1. Branch from the released tag, so the fix contains nothing else:
+**If `main` holds unreleased work for the project**, ship the fix from a support branch:
+
+1. Start the hotfix from the released tag:
 
    ```sh
-   git switch -c fix/<short-name> vX.Y.Z
+   make hotfix-start PROJECT=axiom FROM=0.2.0 NAME=crash-on-load
    ```
 
+   This creates `support/axiom-v0.2` from tag `axiom-v0.2.0` if it is missing, and pushes it. Then it
+   creates `hotfix/crash-on-load` from it. Creating the support branch is an owner step.
 2. Make the fix, or cherry-pick it from `main` if it already exists there. Add a test that fails
-   before the fix.
-3. Add a changelog entry under `[Unreleased]`. Mark it **Fixed**, or **Security** for an advisory.
-4. Open a pull request into `main` with risk class `emergency`. Squash merge when the checks pass.
-5. Cut a patch release from `main` with the steps above. The version is `X.Y.(Z+1)`.
+   before the fix. Add a changelog entry under `[Unreleased]`, marked **Fixed**, or **Security** for
+   an advisory.
+3. Open a pull request into `support/axiom-v0.2` with risk class `emergency`. Squash merge when the
+   checks pass.
+4. Prepare the patch release on the support branch, and open its pull request into the support
+   branch:
 
-If `main` holds unreleased work that must not ship yet, do not work around the tag rule. Revert
-that work on `main` through a pull request first, then cut the hotfix.
+   ```sh
+   make release-prepare PROJECT=axiom VERSION=0.2.1 BASE=origin/support/axiom-v0.2
+   make release-pr PROJECT=axiom VERSION=0.2.1
+   ```
+
+5. After the merge, tag on the support branch: `git switch support/axiom-v0.2 && git pull --ff-only`,
+   then `make release-tag PROJECT=axiom` and `make release-push PROJECT=axiom`. The cooling-off is
+   waived. The approval gate is not.
+6. **Forward-port.** Open a normal pull request into `main` with the same fix. Use a `fix(...)`
+   subject and add a changelog entry under `[Unreleased]`. Without this step the fix is lost in the
+   next minor release.
 
 ## Rollback
 
@@ -96,13 +148,13 @@ A published release is never deleted, and a tag is never moved (see
 1. **Point users to the last good release.** Mark it as latest:
 
    ```sh
-   gh release edit vX.Y.Z --latest --repo olakra/squirrel
+   gh release edit axiom-vX.Y.Z --latest --repo olakra/squirrel
    ```
 
 2. **Warn on the bad release.** Edit its notes to say which version to use instead and why:
 
    ```sh
-   gh release edit vBAD --notes-file warning.md --repo olakra/squirrel
+   gh release edit axiom-vBAD --notes-file warning.md --repo olakra/squirrel
    ```
 
 3. **Ship the undo.** Revert the faulty commit on `main` through a pull request (see
@@ -114,7 +166,9 @@ because the broken build stays downloadable.
 
 ## Records
 
-- Each release has a changelog section, a tag, a GitHub release, the wasm and checksums, and a
-  build attestation. Together they identify the exact source and the exact bytes.
+- Each release has a changelog section, a signed tag, a GitHub release, the artifacts and
+  checksums, and a build attestation. Together they identify the exact source and the exact bytes.
 - The release run in GitHub Actions shows who approved it. Keep the run link in the release
   pull request.
+- The release commit `chore(<project>): release vX.Y.Z` on `main` or on the support branch links the
+  version bump to its pull request.

@@ -38,3 +38,10 @@ projects/axiom/bench-smoke.log
 
 # Local git worktrees created by agent sessions.
 .claude/worktrees/
+
+# Python bytecode (docs/site/build.py)
+__pycache__/
+*.pyc
+
+# Build output of projects/axiom/scripts/build-wasm.sh
+projects/axiom/web/axiom.wasm

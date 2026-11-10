@@ -10,15 +10,10 @@
   },
   "bypass_actors": [],
   "rules": [
-    {
-      "type": "deletion"
-    },
-    {
-      "type": "non_fast_forward"
-    },
-    {
-      "type": "required_linear_history"
-    },
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "required_linear_history" },
+    { "type": "required_signatures" },
     {
       "type": "pull_request",
       "parameters": {
@@ -44,10 +39,13 @@
           { "context": "coverage gate" },
           { "context": "bench smoke" },
           { "context": "wasm build" },
+          { "context": "tictactoe" },
           { "context": "cargo-deny" },
           { "context": "markdownlint" },
+          { "context": "scripts-test" },
           { "context": "commit-lint" },
-          { "context": "changelog-check" }
+          { "context": "changelog-check" },
+          { "context": "branch-name" }
         ]
       }
     }

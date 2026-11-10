@@ -208,7 +208,7 @@ the same names, so developers' habits do not change.
 | `docs` | `docs-site:check` (scope to be decided: the root `**/*.md` glob is wider than `docs/`) |
 | `ci` | the `check` and `test` tasks of every project, run with `moon run :check :test` |
 | `commit-lint`, `changelog-check` | new `ci-scripts` tasks (they need the base ref as an argument) |
-| `release-check` | `ci-scripts:release-verify` |
+| `release-check PROJECT=axiom` | `ci-scripts:release-verify` (axiom only; other projects run the make target) |
 | `scripts-test` | `ci-scripts:test` |
 
 Two behaviors change. First, moon runs tasks in parallel by default, but the Makefile runs gates in

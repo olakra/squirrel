@@ -1,151 +1,429 @@
-/* Light and dark colours come from the tokens on :root. Dark mode follows the OS setting unless
-   the page sets data-theme="light". data-theme="dark" forces dark mode. */
-:root {
-  color-scheme: light dark;
-  --bg: #fbfbf9;
-  --fg: #1d2129;
-  --muted: #5b6372;
-  --link: #1f5fbf;
-  --rule: #d9dce1;
-  --code-bg: #f1f3f5;
-  --accent: #b07a00;
-  --max-width: 52rem;
+/* Squirrel studio brand layer, loaded after Pico CSS (assets/vendor/pico/pico.classless.min.css).
+ *
+ * Pico supplies the classless base styles and the light/dark machinery. This file only:
+ *   1. defines the studio tokens (--sq-*) for each theme, and maps them onto Pico's variables;
+ *   2. sets the type, the reading width and a few site-specific components.
+ *
+ * Themes follow Pico's convention. No data-theme on <html> means "auto" (follow the OS).
+ * data-theme="light" or data-theme="dark" forces one. The selectors below mirror Pico's own,
+ * so they win by source order. Every text/background pair meets WCAG AA (4.5:1) in both themes.
+ */
+
+/* ---------------------------------------------------------------- tokens: light (default) */
+:root:not([data-theme="dark"]),
+[data-theme="light"] {
+  --sq-bg: #fffbf5;          /* warm paper */
+  --sq-surface: #f6eee2;     /* code, table header, toggle */
+  --sq-fg: #2b2118;          /* bark brown, 15.3:1 on bg */
+  --sq-heading: #22190f;
+  --sq-muted: #6b5a48;       /* 6.4:1 on bg */
+  --sq-rule: #eadfcf;
+  --sq-accent: #9a4a00;      /* acorn amber, 6.1:1 on bg */
+  --sq-accent-hover: #7a3a00;
+  --sq-accent-soft: rgba(154, 74, 0, 0.14);
+  --sq-accent-ring: rgba(154, 74, 0, 0.55);
+  --sq-on-accent: #ffffff;
+  --sq-code-fg: #5a3d1f;
+  --sq-mark: #ffe2a8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #15181e;
-    --fg: #e6e8ec;
-    --muted: #9aa3b2;
-    --link: #7fb2ff;
-    --rule: #2c313b;
-    --code-bg: #1e232b;
-    --accent: #ffb81c;
+/* ---------------------------------------------------------------- tokens: dark */
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --sq-bg: #17130f;        /* night burrow */
+    --sq-surface: #251f19;
+    --sq-fg: #eee6da;        /* 14.9:1 on bg */
+    --sq-heading: #fbf4ea;
+    --sq-muted: #b3a593;     /* 7.7:1 on bg */
+    --sq-rule: #352c23;
+    --sq-accent: #f5b14a;    /* 9.9:1 on bg */
+    --sq-accent-hover: #ffc978;
+    --sq-accent-soft: rgba(245, 177, 74, 0.16);
+    --sq-accent-ring: rgba(245, 177, 74, 0.6);
+    --sq-on-accent: #1a1208;
+    --sq-code-fg: #e8d6bd;
+    --sq-mark: #6b4a12;
   }
 }
 
-:root[data-theme="dark"] {
-  --bg: #15181e;
-  --fg: #e6e8ec;
-  --muted: #9aa3b2;
-  --link: #7fb2ff;
-  --rule: #2c313b;
-  --code-bg: #1e232b;
-  --accent: #ffb81c;
+[data-theme="dark"] {
+  --sq-bg: #17130f;
+  --sq-surface: #251f19;
+  --sq-fg: #eee6da;
+  --sq-heading: #fbf4ea;
+  --sq-muted: #b3a593;
+  --sq-rule: #352c23;
+  --sq-accent: #f5b14a;
+  --sq-accent-hover: #ffc978;
+  --sq-accent-soft: rgba(245, 177, 74, 0.16);
+  --sq-accent-ring: rgba(245, 177, 74, 0.6);
+  --sq-on-accent: #1a1208;
+  --sq-code-fg: #e8d6bd;
+  --sq-mark: #6b4a12;
 }
 
-* { box-sizing: border-box; }
+/* ---------------------------------------------------------------- tokens -> Pico */
+:root {
+  --sq-font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Ubuntu,
+    Cantarell, sans-serif;
+  /* Rounded/geometric system faces only; nothing is downloaded. */
+  --sq-font-display: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", Quicksand, Comfortaa, Manjari,
+    "Arial Rounded MT", "Arial Rounded MT Bold", Calibri, "Avenir Next", Avenir, Montserrat, system-ui, sans-serif;
+  --sq-font-mono: ui-monospace, "Cascadia Code", "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --sq-reading-width: 46rem;
+  --sq-frame-width: 64rem;
+  --sq-gutter: 16px;
 
+  --pico-font-family: var(--sq-font-body);
+  --pico-font-family-sans-serif: var(--sq-font-body);
+  --pico-font-family-monospace: var(--sq-font-mono);
+  --pico-line-height: 1.65;
+  --pico-border-radius: 0.5rem;
+  --pico-typography-spacing-vertical: 1.15rem;
+}
+
+:root:not([data-theme="dark"]),
+[data-theme="light"],
+[data-theme="dark"] {
+  --pico-background-color: var(--sq-bg);
+  --pico-color: var(--sq-fg);
+  --pico-muted-color: var(--sq-muted);
+  --pico-muted-border-color: var(--sq-rule);
+  --pico-text-selection-color: var(--sq-accent-soft);
+  --pico-primary: var(--sq-accent);
+  --pico-primary-background: var(--sq-accent);
+  --pico-primary-border: var(--sq-accent);
+  --pico-primary-underline: var(--sq-accent-ring);
+  --pico-primary-hover: var(--sq-accent-hover);
+  --pico-primary-hover-background: var(--sq-accent-hover);
+  --pico-primary-hover-border: var(--sq-accent-hover);
+  --pico-primary-hover-underline: var(--sq-accent-hover);
+  --pico-primary-focus: var(--sq-accent-ring);
+  --pico-primary-inverse: var(--sq-on-accent);
+  --pico-h1-color: var(--sq-heading);
+  --pico-h2-color: var(--sq-heading);
+  --pico-h3-color: var(--sq-heading);
+  --pico-h4-color: var(--sq-fg);
+  --pico-h5-color: var(--sq-fg);
+  --pico-h6-color: var(--sq-muted);
+  --pico-mark-background-color: var(--sq-mark);
+  --pico-mark-color: var(--sq-fg);
+  --pico-blockquote-border-color: var(--sq-accent);
+  --pico-table-border-color: var(--sq-rule);
+  --pico-code-background-color: var(--sq-surface);
+  --pico-code-color: var(--sq-code-fg);
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --pico-background-color: var(--sq-bg);
+    --pico-color: var(--sq-fg);
+    --pico-muted-color: var(--sq-muted);
+    --pico-muted-border-color: var(--sq-rule);
+    --pico-text-selection-color: var(--sq-accent-soft);
+    --pico-primary: var(--sq-accent);
+    --pico-primary-background: var(--sq-accent);
+    --pico-primary-border: var(--sq-accent);
+    --pico-primary-underline: var(--sq-accent-ring);
+    --pico-primary-hover: var(--sq-accent-hover);
+    --pico-primary-hover-background: var(--sq-accent-hover);
+    --pico-primary-hover-border: var(--sq-accent-hover);
+    --pico-primary-hover-underline: var(--sq-accent-hover);
+    --pico-primary-focus: var(--sq-accent-ring);
+    --pico-primary-inverse: var(--sq-on-accent);
+    --pico-h1-color: var(--sq-heading);
+    --pico-h2-color: var(--sq-heading);
+    --pico-h3-color: var(--sq-heading);
+    --pico-h4-color: var(--sq-fg);
+    --pico-h5-color: var(--sq-fg);
+    --pico-h6-color: var(--sq-muted);
+    --pico-mark-background-color: var(--sq-mark);
+    --pico-mark-color: var(--sq-fg);
+    --pico-blockquote-border-color: var(--sq-accent);
+    --pico-table-border-color: var(--sq-rule);
+    --pico-code-background-color: var(--sq-surface);
+    --pico-code-color: var(--sq-code-fg);
+  }
+}
+
+/* ---------------------------------------------------------------- page frame */
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font: 1rem/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  max-width: 100%;
+  overflow-x: clip; /* last-resort guard: no horizontal page scroll at phone width */
+  background: var(--sq-bg);
+  color: var(--sq-fg);
 }
 
-a { color: var(--link); }
-
-.site-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.25rem;
-  padding: 0.9rem 16px;
-  border-bottom: 1px solid var(--rule);
+/* Pico's classless containers grow to 1450px and drop the side padding above 576px.
+   Keep a fixed 16px gutter and a comfortable measure instead. */
+body > header,
+body > main,
+body > footer {
+  max-width: calc(var(--sq-frame-width) + 2 * var(--sq-gutter));
+  padding-right: var(--sq-gutter);
+  padding-left: var(--sq-gutter);
 }
 
-.site-title {
-  font-weight: 700;
-  color: var(--fg);
-  text-decoration: none;
-}
-
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.9rem;
-  font-size: 0.95rem;
-}
-
-.content {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 1.25rem 16px 3rem;
+body > main {
+  max-width: calc(var(--sq-reading-width) + 2 * var(--sq-gutter));
+  padding-top: 2.5rem;
+  padding-bottom: 4rem;
   overflow-wrap: break-word;
 }
 
-.content h1,
-.content h2,
-.content h3,
-.content h4 {
-  line-height: 1.25;
-  scroll-margin-top: 1rem;
+/* ---------------------------------------------------------------- header */
+body > header.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--sq-rule);
 }
 
-.content h1 { font-size: 1.85rem; margin-top: 0; }
-.content h2 { font-size: 1.4rem; margin-top: 2rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--rule); }
-.content h3 { font-size: 1.15rem; margin-top: 1.5rem; }
-
-.content li > p { margin: 0.25rem 0; }
-.content li { margin: 0.2rem 0; }
-
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.9em;
-  background: var(--code-bg);
-  padding: 0.1em 0.3em;
-  border-radius: 4px;
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--sq-heading);
+  text-decoration: none;
 }
 
-pre {
-  overflow-x: auto;
-  background: var(--code-bg);
-  padding: 0.75rem 1rem;
-  border-radius: 6px;
-  line-height: 1.45;
+.brand:hover {
+  color: var(--sq-heading);
+  text-decoration: none;
 }
 
-pre code {
-  background: none;
+.brand-mark {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: var(--sq-accent);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-name {
+  font-family: var(--sq-font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.brand-tagline {
+  color: var(--sq-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+}
+
+body > header nav.site-nav {
+  display: block;
+  flex: 1 1 auto;
+}
+
+body > header nav.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.15rem 0.25rem;
+  margin: 0;
+}
+
+body > header nav.site-nav li {
   padding: 0;
-  font-size: 0.875rem;
 }
 
-.table-wrap {
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
+body > header nav.site-nav li a {
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  color: var(--sq-fg);
   font-size: 0.95rem;
 }
 
-th,
-td {
-  border: 1px solid var(--rule);
-  padding: 0.4rem 0.6rem;
+body > header nav.site-nav li a:hover {
+  background: var(--sq-accent-soft);
+  color: var(--sq-fg);
+}
+
+body > header nav.site-nav li a[aria-current="page"] {
+  color: var(--sq-accent);
+  font-weight: 600;
+}
+
+/* Theme toggle: a quiet outline pill, not a primary call to action. */
+button.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: auto;
+  margin: 0;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--sq-rule);
+  border-radius: 999px;
+  background: var(--sq-surface);
+  color: var(--sq-fg);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+button.theme-toggle:hover {
+  border-color: var(--sq-accent);
+  background: var(--sq-accent-soft);
+  color: var(--sq-fg);
+}
+
+button.theme-toggle [aria-hidden="true"] {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ---------------------------------------------------------------- focus */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 3px solid var(--sq-accent);
+  outline-offset: 2px;
+  box-shadow: none;
+  border-radius: 0.25rem;
+}
+
+button.theme-toggle:focus-visible {
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------- typography */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--sq-font-display);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  scroll-margin-top: 1rem;
+}
+
+main h1 {
+  font-size: clamp(1.7rem, 1.2rem + 2.2vw, 2.4rem);
+  font-weight: 800;
+}
+
+main h2 {
+  margin-top: 2.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--sq-rule);
+  font-size: 1.5rem;
+  font-weight: 750;
+}
+
+main h3 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+main > :first-child {
+  margin-top: 0;
+}
+
+a {
+  text-underline-offset: 0.18em;
+}
+
+main li {
+  margin-bottom: 0.3rem;
+}
+
+main li > p {
+  margin: 0.25rem 0;
+}
+
+blockquote {
+  margin: 1.5rem 0;
+  padding: 0.5rem 1rem;
+  border-left: 3px solid var(--sq-accent);
+  background: var(--sq-accent-soft);
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: var(--sq-fg);
+}
+
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--sq-rule);
+}
+
+/* ---------------------------------------------------------------- code */
+code,
+kbd,
+pre {
+  font-family: var(--sq-font-mono);
+}
+
+:not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.3rem;
+  font-size: 0.88em;
+}
+
+pre {
+  margin: 1.25rem 0;
+  border: 1px solid var(--sq-rule);
+  border-left: 3px solid var(--sq-accent);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+pre > code {
+  padding: 1rem 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+/* ---------------------------------------------------------------- tables */
+/* build.py wraps each table in .table-wrap, so wide tables scroll inside it on phones. */
+.table-wrap {
+  max-width: 100%;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--sq-rule);
+  border-radius: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+  width: 100%;
+  margin: 0;
+  font-size: 0.93rem;
+}
+
+.table-wrap th,
+.table-wrap td {
+  padding: 0.55rem 0.75rem;
   vertical-align: top;
   text-align: left;
 }
 
-blockquote {
-  margin: 1rem 0;
-  padding-left: 1rem;
-  border-left: 3px solid var(--accent);
-  color: var(--muted);
+.table-wrap thead th {
+  background: var(--sq-surface);
+  font-weight: 650;
 }
 
-hr {
-  border: 0;
-  border-top: 1px solid var(--rule);
-  margin: 2rem 0;
+.table-wrap tr:last-child td {
+  border-bottom: 0;
 }
 
+/* ---------------------------------------------------------------- mermaid */
 .mermaid {
-  margin: 1.25rem 0;
+  margin: 1.5rem 0;
+  padding: 1rem;
   overflow-x: auto;
+  border: 1px solid var(--sq-rule);
+  border-radius: 0.5rem;
   text-align: center;
 }
 
@@ -154,15 +432,56 @@ hr {
   height: auto;
 }
 
-.site-footer {
-  padding: 1rem 16px 2rem;
-  border-top: 1px solid var(--rule);
-  color: var(--muted);
+/* ---------------------------------------------------------------- footer */
+body > footer.site-footer {
+  padding-top: 1.5rem;
+  padding-bottom: 2.5rem;
+  border-top: 1px solid var(--sq-rule);
+  color: var(--sq-muted);
   font-size: 0.85rem;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 600px) {
-  .site-nav { font-size: 0.9rem; }
-  .content h1 { font-size: 1.5rem; }
+.site-footer p {
+  margin-bottom: 0.4rem;
+}
+
+/* ---------------------------------------------------------------- phones */
+@media (max-width: 640px) {
+  body > header.site-header {
+    gap: 0.5rem 1rem;
+  }
+
+  body > header nav.site-nav {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  button.theme-toggle {
+    order: 2;
+    margin-left: auto;
+  }
+
+  body > header nav.site-nav ul {
+    justify-content: flex-start;
+    margin-left: -0.6rem;
+  }
+
+  body > main {
+    padding-top: 1.5rem;
+  }
+
+  main h2 {
+    margin-top: 2.25rem;
+    font-size: 1.3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

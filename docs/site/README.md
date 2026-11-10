@@ -10,10 +10,12 @@ source. Nothing here copies their text by hand.
 |---|---|
 | `build.sh` | Entry point. Runs `build.py` with the right paths. Writes `_site/`. |
 | `build.py` | Stages the sources, renders HTML, writes the output and runs the checks. Standard library only. |
-| `_config.yml` | Site title, description, base path and the GitHub links. |
-| `_layouts/default.html` | Page layout: header, nav, content, footer, Mermaid include. |
-| `_includes/mermaid.html` | Loads Mermaid from the CDN and renders each `language-mermaid` code block. |
-| `assets/site.css` | Styles. Light and dark colours are tokens on `:root`. Single column with a 16 px gutter on phones. |
+| `_config.yml` | Site title, description, studio name and tagline, base path and the GitHub links. |
+| `_layouts/default.html` | Page layout: pre-paint theme snippet, studio header, nav, theme toggle, content, footer. |
+| `_includes/theme.html` | Theme toggle script (auto, light, dark). Saves the choice and tells Mermaid to re-render. |
+| `_includes/mermaid.html` | Loads Mermaid from the CDN and renders each `language-mermaid` block in the site theme. |
+| `assets/vendor/pico/` | Vendored Pico CSS 2.1.1 (classless build), its MIT `LICENSE` and a source note. Do not edit. |
+| `assets/site.css` | Studio brand layer on top of Pico: tokens per theme, type, reading width, code, tables. |
 | `index.md` | Landing page. |
 | `pages/diagrams.md` | System context, container view, belt tick, inserter states and release pipeline. |
 | `.gitignore` | Keeps `_site/` out of git. |
@@ -76,6 +78,52 @@ The renderer handles the subset these docs use: ATX headings with ids, paragraph
 (with fenced code inside items), block quotes, pipe tables, fenced code with a language, inline code, links, bold,
 italic and horizontal rules. Raw HTML in the sources is escaped, not passed through. Anything outside this subset
 renders as plain text, so check a new construct in the output before you rely on it.
+
+## Theme
+
+The base theme is [Pico CSS](https://picocss.com) 2.1.1, the classless build, under the MIT license. It styles plain
+semantic HTML, so the renderer's output needs no classes, and it ships light and dark themes. The file is vendored in
+`assets/vendor/pico/` so the build and the site need no network for styles. `build.py` copies all of `assets/`, so the
+vendor folder ships with no build change.
+
+### Brand layer
+
+`assets/site.css` loads after Pico and holds only the studio look:
+
+- Tokens named `--sq-*` (paper, bark, acorn amber) are set once per theme and mapped onto Pico's variables, such as
+  `--pico-primary`, `--pico-background-color` and `--pico-code-background-color`. Change a colour in the token block,
+  not in a rule.
+- Every text and background pair meets WCAG AA (4.5:1) in both themes. Check a new colour before you commit it.
+- Headings use a rounded system font stack (`ui-rounded`, then other rounded or geometric faces). Body text uses
+  `system-ui`. No font is downloaded.
+- The content column is 46 rem wide with a fixed 16 px gutter. Tables scroll inside their `.table-wrap` box on phones,
+  so the page itself never scrolls sideways.
+
+### Light, dark and auto
+
+The theme follows Pico's convention on `<html>`:
+
+| `data-theme` | Result |
+|---|---|
+| absent | Auto. Follows the OS `prefers-color-scheme` setting. |
+| `light` | Light, whatever the OS says. |
+| `dark` | Dark, whatever the OS says. |
+
+The header button cycles auto, light, dark. It saves the choice in `localStorage` under `squirrel-theme`, inside
+`try`/`catch`, so a blocked store only means the choice is not remembered. A small script in `<head>` applies the
+saved value before the first paint, so a forced theme does not flash. On each change the toggle fires a
+`squirrel:themechange` event. The Mermaid include listens for it and re-renders each diagram from its saved source
+with the `dark` or `default` Mermaid theme. Two `theme-color` meta tags colour the browser bar for each OS scheme.
+
+### Upgrading Pico
+
+1. Pick an exact 2.x version, at least two weeks old, from <https://www.npmjs.com/package/@picocss/pico>.
+2. Download `css/pico.classless.min.css` and `LICENSE.md` for that version from
+   `https://cdn.jsdelivr.net/npm/@picocss/pico@<version>/`. Save them as `assets/vendor/pico/pico.classless.min.css`
+   and `assets/vendor/pico/LICENSE`.
+3. Update the version and the SHA-256 in `assets/vendor/pico/README.md` and in this section.
+4. Build, then check the header, a table, a code block and a diagram in light and dark. A major version (3.x) may
+   rename the `--pico-*` variables that `site.css` maps.
 
 ## Mermaid
 

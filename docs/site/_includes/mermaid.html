@@ -2,20 +2,42 @@
 <script>
   // Turns every code block tagged with the language-mermaid class into a diagram. If the CDN script
   // did not load, the block stays on the page as readable source.
+  // The Mermaid theme follows the site theme (window.squirrelTheme from theme.html, else the OS),
+  // and the diagrams re-render from their saved source on each "squirrel:themechange" event.
   (function () {
     if (typeof mermaid === "undefined") { return; }
-    var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default" });
+
+    function currentTheme() {
+      if (window.squirrelTheme) { return window.squirrelTheme.effective(); }
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+
     var nodes = [];
     Array.prototype.forEach.call(document.querySelectorAll("pre > code.language-mermaid"), function (code) {
       var div = document.createElement("div");
       div.className = "mermaid";
       div.textContent = code.textContent;
+      div.setAttribute("data-source", code.textContent);
       code.parentNode.replaceWith(div);
       nodes.push(div);
     });
-    if (nodes.length) {
+    if (!nodes.length) { return; }
+
+    var rendered = null;
+    function render(theme) {
+      if (theme === rendered) { return; }
+      rendered = theme;
+      mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: theme === "dark" ? "dark" : "default" });
+      nodes.forEach(function (div) {
+        div.removeAttribute("data-processed");
+        div.textContent = div.getAttribute("data-source");
+      });
       mermaid.run({ nodes: nodes }).catch(function (err) { console.error("Mermaid render failed", err); });
     }
+
+    render(currentTheme());
+    document.addEventListener("squirrel:themechange", function (event) {
+      render(event.detail && event.detail.theme ? event.detail.theme : currentTheme());
+    });
   })();
 </script>

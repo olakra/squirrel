@@ -53,13 +53,15 @@ replace `STEAM_CONFIG_VDF`.
 
 ## What the workflow does
 
-`.github/workflows/steam-build.yml` runs on tags `v*`, and on manual dispatch for builds only.
+`.github/workflows/steam-build.yml` is on hold. Its tag trigger is turned off, so it runs only on manual
+dispatch (`workflow_dispatch`), for builds only. When the trigger is turned back on, it runs on axiom's release
+tags, `axiom-v*`.
 
 1. A WASM job builds `axiom.wasm` with `scripts/build-wasm.sh`.
 2. A matrix job runs on Ubuntu, Windows and macOS. Each job packages the desktop shell with
    electron-builder in `--dir` mode, stages the output with `stage-depot.mjs`, and uploads it as a tar.
    The tar keeps file modes and symlinks, which the macOS app bundle needs.
-3. The upload job runs only on tags, and only when `STEAM_USERNAME` is set. It downloads the three
+3. The upload job runs only on a tag run, and only when `STEAM_USERNAME` is set. It downloads the three
    depot tars, renders the templates with `render_vdf.py`, and runs steamcmd with
    `+run_app_build`. The build goes to a preview. It is not set live. Set a branch live by hand in
    Steamworks after you test the preview.

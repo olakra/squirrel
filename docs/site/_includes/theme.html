@@ -1,0 +1,91 @@
+<script>
+  // Theme toggle: cycles auto -> light -> dark. "auto" removes data-theme so Pico follows the OS;
+  // "light" and "dark" set data-theme on <html>, which Pico and assets/site.css both read.
+  // The choice is kept in localStorage under "squirrel-theme" (the head snippet re-applies it
+  // before paint). A "squirrel:themechange" event tells the Mermaid include to re-render.
+  (function () {
+    var KEY = "squirrel-theme";
+    var ORDER = ["auto", "light", "dark"];
+    var LABELS = { auto: "Auto", light: "Light", dark: "Dark" };
+    var ICONS = { auto: "◐", light: "☀", dark: "☾" };
+    var root = document.documentElement;
+    var media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+    function stored() {
+      var attr = root.getAttribute("data-theme");
+      return attr === "light" || attr === "dark" ? attr : "auto";
+    }
+
+    function effective() {
+      var mode = stored();
+      if (mode !== "auto") { return mode; }
+      return media && media.matches ? "dark" : "light";
+    }
+
+    function notify() {
+      var detail = { mode: stored(), theme: effective() };
+      var event;
+      try {
+        event = new CustomEvent("squirrel:themechange", { detail: detail });
+      } catch (e) {
+        event = document.createEvent("CustomEvent");
+        event.initCustomEvent("squirrel:themechange", false, false, detail);
+      }
+      document.dispatchEvent(event);
+    }
+
+    function paintButton(button) {
+      if (!button) { return; }
+      var mode = stored();
+      var next = ORDER[(ORDER.indexOf(mode) + 1) % ORDER.length];
+      button.querySelector(".theme-toggle-label").textContent = LABELS[mode];
+      button.querySelector(".theme-toggle-icon").textContent = ICONS[mode];
+      button.setAttribute("aria-label", "Colour theme: " + LABELS[mode].toLowerCase() +
+        ". Switch to " + LABELS[next].toLowerCase());
+      button.setAttribute("title", "Theme: " + LABELS[mode] + " (click for " + LABELS[next] + ")");
+    }
+
+    function apply(mode, button) {
+      if (mode === "auto") {
+        root.removeAttribute("data-theme");
+      } else {
+        root.setAttribute("data-theme", mode);
+      }
+      try {
+        if (mode === "auto") {
+          window.localStorage.removeItem(KEY);
+        } else {
+          window.localStorage.setItem(KEY, mode);
+        }
+      } catch (e) { /* storage unavailable: the choice lasts for this page only */ }
+      paintButton(button);
+      notify();
+    }
+
+    window.squirrelTheme = { mode: stored, effective: effective };
+
+    var button = document.getElementById("theme-toggle");
+    paintButton(button);
+    if (button) {
+      button.addEventListener("click", function () {
+        var next = ORDER[(ORDER.indexOf(stored()) + 1) % ORDER.length];
+        apply(next, button);
+      });
+    }
+
+    if (media) {
+      var onChange = function () { if (stored() === "auto") { notify(); } };
+      if (media.addEventListener) {
+        media.addEventListener("change", onChange);
+      } else if (media.addListener) {
+        media.addListener(onChange);
+      }
+    }
+
+    // Marks the nav link for the current page.
+    var here = window.location.pathname.replace(/\/$/, "/index.html");
+    Array.prototype.forEach.call(document.querySelectorAll(".site-nav a"), function (link) {
+      if (link.pathname === here) { link.setAttribute("aria-current", "page"); }
+    });
+  })();
+</script>
