@@ -67,7 +67,13 @@ if [[ -z "$(git config --get user.signingkey || true)" ]]; then
 fi
 
 notes="$(bash scripts/ci/extract-changelog.sh "$version" "$(release_changelog "$PROJECT")")"
-git tag -s "$tag" -m "${PROJECT} v${version}" -m "$notes" "$commit"
+# The message is the changelog section, word for word. The default cleanup mode strips lines that
+# start with "#" as comments, which would drop the "### Added" headings, so use verbatim. Verbatim
+# adds no final newline, and the signature must start on its own line, so the file ends with one.
+msg_file="$(mktemp)"
+trap 'rm -f "$msg_file"' EXIT
+printf '%s\n\n%s\n' "${PROJECT} v${version}" "$notes" > "$msg_file"
+git tag -s "$tag" --cleanup=verbatim -F "$msg_file" "$commit"
 git verify-tag "$tag" >/dev/null 2>&1 || echo "note: git cannot verify the tag locally (gpg.ssh.allowedSignersFile unset?)"
 
 echo
