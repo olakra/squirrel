@@ -45,7 +45,7 @@ lane frees room before its upstream neighbour hands items over.
 1. **Rear insertion is O(N).** Switch to a ring buffer before adding
    200k-item stress tests.
 2. **Spec conflict on hashing.** The spec names both FNV-1a and Blake3. FNV-1a
-   is kept for 0.1.1 (no dependency); see [ADR 0005](../../../docs/engineering/adr/0005-state-hash.md).
+   is kept for 0.1.2 (no dependency); see [ADR 0005](../../../docs/engineering/adr/0005-state-hash.md).
    The switch to Blake3 is one release, with a Breaking changelog entry, once a dependency is allowed.
 3. **Spec conflict on fixed-point.** The spec allows `I32F32` or discrete
    integers. Discrete integers are used, which removes the `fixed` dependency.
