@@ -1,16 +1,19 @@
-# Release pipeline. Runs when a tag such as v0.1.1 is pushed.
+# Release pipeline. Runs when a release tag such as axiom-v0.2.0 or tictactoe-v0.1.0 is pushed.
+# Tags are "<project>-vMAJOR.MINOR.PATCH[-prerelease]"; the projects are listed in
+# scripts/release/projects.sh.
 #
-# Order: verify (tag rules) -> ci (make ci, the same gates as ci.yml) -> build (wasm and
-# checksums) -> release (waits for approval in the "production" environment, then publishes
-# the GitHub release and the build attestation).
+# Order: verify (tag rules; outputs project and version) -> ci (make ci, the same gates as
+# ci.yml) -> build (make release-artifacts: files and SHA256SUMS) -> release (waits for approval
+# in the "production" environment, then attests and publishes the GitHub release).
 #
-# The runbook is docs/engineering/release-process.md. Tags are never moved or deleted:
-# see docs/engineering/tag-protection.md.
+# The runbook is docs/engineering/release-process.md. Never create the release in the GitHub UI:
+# this workflow must create it, or the files and attestation are not attached.
+# Tags are never moved or deleted: see docs/engineering/tag-protection.md.
 name: Release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["*-v*.*.*"]
 
 # No token rights at the top level. Each job grants only what it needs.
 permissions: {}
@@ -20,26 +23,30 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  AXIOM_DIR: projects/axiom
-
 jobs:
   verify:
-    # Fails unless the tag is an annotated vMAJOR.MINOR.PATCH tag that equals the Cargo.toml
-    # version, has a CHANGELOG section, sits on main, and has no release yet.
+    # Fails unless the tag is an annotated <project>-vX.Y.Z tag that equals the project's version
+    # files, has a CHANGELOG section, sits on main or the project's support branch, and has no
+    # release yet.
     name: verify tag
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+    outputs:
+      project: ${{ steps.check.outputs.project }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: fetch origin/main for the reachability check
-        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+      - name: fetch main and the support branches for the reachability check
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags origin '+refs/heads/support/*:refs/remotes/origin/support/*' || true
       - name: check the tag
+        id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/ci/check-release-tag.sh "$GITHUB_REF_NAME"
@@ -66,30 +73,29 @@ jobs:
         run: make ci
 
   build:
-    # Builds the threaded wasm (nightly with build-std, as scripts/build-wasm.sh prefers) and
-    # packages it with a SHA-256 checksum file.
-    name: build wasm
-    needs: ci
+    # Builds the project's release files with the same script as `make release-artifacts`.
+    name: build ${{ needs.verify.outputs.project }}
+    needs: [verify, ci]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
+    env:
+      PROJECT: ${{ needs.verify.outputs.project }}
+      VERSION: ${{ needs.verify.outputs.version }}
+      # Must equal the exact pin of wasm-bindgen in projects/tictactoe/web/Cargo.toml.
+      WASM_BINDGEN_VERSION: 0.2.100
     steps:
       - uses: actions/checkout@v7
       - name: install toolchains
         run: |
           rustup target add wasm32-unknown-unknown
           rustup toolchain install nightly --profile minimal --component rust-src --target wasm32-unknown-unknown
-      - name: build axiom.wasm
-        working-directory: ${{ env.AXIOM_DIR }}
-        run: bash scripts/build-wasm.sh
-      - name: package axiom-<version>.wasm and SHA256SUMS
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          mkdir -p dist
-          cp "$AXIOM_DIR/web/axiom.wasm" "dist/axiom-${version}.wasm"
-          (cd dist && sha256sum "axiom-${version}.wasm" > SHA256SUMS)
-          cat dist/SHA256SUMS
+      - name: install wasm-bindgen-cli (tictactoe only)
+        if: env.PROJECT == 'tictactoe'
+        run: cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+      - name: make release-artifacts
+        run: make release-artifacts PROJECT="$PROJECT" VERSION="$VERSION"
       - name: upload release files
         uses: actions/upload-artifact@v4
         with:
@@ -98,10 +104,9 @@ jobs:
           if-no-files-found: error
 
   release:
-    # Waits for a reviewer in the "production" environment. The owner must configure it:
-    # see docs/engineering/branch-protection.md.
+    # Waits for a reviewer in the "production" environment (docs/engineering/branch-protection.md).
     name: publish release
-    needs: build
+    needs: [verify, build]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -111,6 +116,9 @@ jobs:
       contents: write       # create the GitHub release and upload its files
       id-token: write       # sign the build provenance attestation
       attestations: write   # store the attestation
+    env:
+      PROJECT: ${{ needs.verify.outputs.project }}
+      VERSION: ${{ needs.verify.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -120,27 +128,34 @@ jobs:
       - name: verify checksums
         working-directory: dist
         run: sha256sum -c SHA256SUMS
-      - name: extract release notes from CHANGELOG
+      - name: extract release notes from the project's CHANGELOG
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          bash scripts/ci/extract-changelog.sh "$version" "$AXIOM_DIR/CHANGELOG.md" > release-notes.md
+          source scripts/release/projects.sh
+          bash scripts/ci/extract-changelog.sh "$VERSION" "$(release_changelog "$PROJECT")" > release-notes.md
       - name: attest build provenance
         uses: actions/attest-build-provenance@v4
         with:
-          subject-path: dist/*.wasm
+          subject-path: dist/*
       - name: create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          prerelease=()
-          case "$version" in
-            *-*) prerelease=(--prerelease) ;;
+          source scripts/release/projects.sh
+          flags=()
+          case "$VERSION" in
+            *-*) flags+=(--prerelease --latest=false) ;;
+            *)
+              # One "Latest" release per repository: only the primary project's stable releases.
+              if [[ "$PROJECT" == "$RELEASE_PRIMARY_PROJECT" ]]; then
+                flags+=(--latest)
+              else
+                flags+=(--latest=false)
+              fi
+              ;;
           esac
           gh release create "$GITHUB_REF_NAME" \
             --verify-tag \
-            --title "axiom $GITHUB_REF_NAME" \
+            --title "$PROJECT v$VERSION" \
             --notes-file release-notes.md \
-            "${prerelease[@]}" \
-            "dist/axiom-${version}.wasm" \
-            dist/SHA256SUMS
+            "${flags[@]}" \
+            dist/*

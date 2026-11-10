@@ -1,11 +1,28 @@
 version: 2
+# Dependabot pull requests must pass the same gates as any other change, including commit-lint
+# and branch-name (dependabot/** is allowed). The prefixes below make their titles valid
+# Conventional Commits: build(deps) for crates, ci(deps) for workflow actions.
 updates:
-  # Rust crate. Dependabot reads Cargo.toml and Cargo.lock in this directory.
+  # Rust crates. Dependabot reads Cargo.toml and Cargo.lock in each directory.
   - package-ecosystem: cargo
     directory: /projects/axiom
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: cargo
+    directory: /projects/tictactoe
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build(deps)"
+    ignore:
+      # wasm-bindgen is pinned exactly and must match WASM_BINDGEN_VERSION in ci.yml and
+      # release.yml. Bump all three together by hand.
+      - dependency-name: wasm-bindgen
 
   # Workflow action versions. Workflows live at the repo root, so the directory is "/".
   - package-ecosystem: github-actions
@@ -13,6 +30,8 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
 
-  # No npm entry yet: projects/axiom/web is plain JavaScript with no package.json.
-  # Add an npm entry here when a package.json exists.
+  # No bun entry yet: projects/axiom/desktop has no committed bun.lock. Add a "bun" entry
+  # for /projects/axiom/desktop once bun.lock is committed.

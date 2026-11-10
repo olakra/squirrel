@@ -1,5 +1,5 @@
-# ci-scripts: the governance and release scripts in scripts/ci. release-verify reads the crate
-# version and changelog, so this project depends on axiom-core.
+# ci-scripts: the governance and release scripts in scripts/ci and scripts/release. release-verify
+# reads each project's version and changelog, so this project depends on axiom-core.
 # Decision record: docs/engineering/adr/0003-monorepo-orchestration.md.
 $schema: 'https://moonrepo.dev/schemas/project.json'
 
@@ -15,14 +15,17 @@ dependsOn:
 fileGroups:
   sources:
     - '/scripts/ci/**/*.sh'
+    - '/scripts/release/**/*.sh'
   release-inputs:
     - '/projects/axiom/Cargo.toml'
     - '/projects/axiom/CHANGELOG.md'
+    - '/projects/tictactoe/Cargo.toml'
+    - '/projects/tictactoe/CHANGELOG.md'
 
 tasks:
   check:
     script: |
-      bash -n scripts/ci/*.sh
+      bash -n scripts/ci/*.sh scripts/release/*.sh
     inputs:
       - '@group(sources)'
     options:
@@ -33,16 +36,19 @@ tasks:
       bash scripts/ci/check-commit-messages.sh --self-test
       bash scripts/ci/check-changelog.sh --self-test
       bash scripts/ci/extract-changelog.sh --self-test
+      bash scripts/ci/check-release-tag.sh --self-test
+      bash scripts/ci/check-branch-name.sh --self-test
     inputs:
       - '@group(sources)'
     options:
       runFromWorkspaceRoot: true
 
   release-verify:
-    # Local mode, the same as `make release-check`. It tags nothing. CI mode (the verify job in
-    # release.yml) needs the tag name and GH_TOKEN, and is not wired to this task yet.
+    # Local mode for axiom, the same as `make release-check PROJECT=axiom`. It tags nothing.
+    # Other projects use `make release-check PROJECT=<id>`. CI mode (the verify job in release.yml)
+    # needs the tag name and GH_TOKEN, and is not wired to this task yet.
     script: |
-      bash scripts/ci/check-release-tag.sh --local
+      bash scripts/ci/check-release-tag.sh --local axiom
     inputs:
       - '@group(sources)'
       - '@group(release-inputs)'

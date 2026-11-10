@@ -1,3 +1,8 @@
 [workspace]
 members = ["core", "web"]
 resolver = "2"
+
+# One version for the whole project. It is the source of truth for tictactoe releases
+# (tags tictactoe-vX.Y.Z). scripts/release/projects.sh reads it; make release-prepare sets it.
+[workspace.package]
+version = "0.1.0"

@@ -6,7 +6,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # support/** are the hotfix lines (docs/engineering/branching-strategy.md).
+    branches: [main, "support/**"]
   pull_request:
     # labeled and unlabeled re-run the changelog-check job, so adding "no-changelog" takes effect.
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -233,6 +234,29 @@ jobs:
       - name: markdownlint-cli2
         run: npx --yes markdownlint-cli2@0.23.2 "**/*.md"
 
+  scripts-test:
+    # Self-tests of every governance and release script, so a broken check cannot pass silently.
+    name: scripts-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: make scripts-test
+        run: make scripts-test
+
+  branch-name:
+    # The pull request's head branch must follow docs/engineering/branching-strategy.md.
+    name: branch-name
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: check the head branch name
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: bash scripts/ci/check-branch-name.sh "$HEAD_BRANCH"
+
   commit-lint:
     # Every commit in the pull request, and the PR title (the squash commit subject), must follow
     # Conventional Commits. Rules: docs/engineering/commit-conventions.md.
@@ -260,9 +284,10 @@ jobs:
         run: bash scripts/ci/check-commit-messages.sh --subject "$PR_TITLE"
 
   changelog-check:
-    # Fails when projects/axiom/src or Cargo.toml changes without a CHANGELOG.md entry.
-    # The label "no-changelog" opts out. Script and rules: scripts/ci/check-changelog.sh.
+    # Fails when a released project's source changes without an entry in its CHANGELOG.md.
+    # Projects and watched paths: scripts/release/projects.sh. The label "no-changelog" opts out.
     name: changelog-check
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
