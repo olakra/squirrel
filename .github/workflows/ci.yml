@@ -132,7 +132,7 @@ jobs:
         run: bash scripts/ci/check-bench-output.sh "${{ env.AXIOM_DIR }}/bench-smoke.log"
       - name: upload bench output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bench-smoke-log
           path: ${{ env.AXIOM_DIR }}/bench-smoke.log
@@ -156,7 +156,7 @@ jobs:
         working-directory: ${{ env.AXIOM_DIR }}
         run: bash scripts/build-wasm.sh
       - name: upload axiom.wasm
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: axiom-wasm
           path: ${{ env.AXIOM_DIR }}/web/axiom.wasm
@@ -199,7 +199,7 @@ jobs:
         run: bash web/build.sh
       # Keeps the built site so it can be served and tested in a browser.
       - name: upload the browser bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tictactoe-site
           path: ${{ env.TICTACTOE_DIR }}/web/www
