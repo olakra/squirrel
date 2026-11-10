@@ -6,6 +6,10 @@
 title: "Squirrel: Engineering Docs"
 description: "Engineering standards, architecture decisions and diagrams for the squirrel monorepo."
 
+# Studio header. studio_name is the brand mark text; tagline sits under it.
+studio_name: "Squirrel"
+tagline: "Indie game studio — engineering docs"
+
 # Path the site is served under. The workflow sets it from the Pages base path, and the
 # SITE_BASEURL environment variable overrides it. Empty for a user site, "/squirrel" for a project site.
 baseurl: ""
